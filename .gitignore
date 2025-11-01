@@ -98,3 +98,9 @@ coverage/
 .env
 .env.local
 .env.*.local
+
+# Android build cache
+android/app/.cxx/
+
+# Tool directory
+.tool/
