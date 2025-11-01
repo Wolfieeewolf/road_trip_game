@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Marks this variant as a developer build so Android Auto lists it under Custom apps -->
+        <meta-data
+            android:name="androidx.car.app.developerApp"
+            android:value="true" />
+    </application>
+</manifest>

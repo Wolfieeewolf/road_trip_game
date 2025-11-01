@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where npm:*)",
+      "Bash(npm config:*)",
+      "Bash(dir \"C:\\Users\\wolfi\\AppData\\Roaming\\npm\")",
+      "Bash(claude --version:*)",
+      "Bash(\"C:\\Users\\wolfi\\AppData\\Roaming\\npm\\claude.cmd\" --version)",
+      "Bash(powershell:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(del \"D:\\New HD\\MCP\\road_trip_game\\lib\\screens\\game_setup_screen.dart\")",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter clean:*)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

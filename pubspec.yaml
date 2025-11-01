@@ -1,0 +1,38 @@
+name: roadtripgame
+description: "A collection of fun road trip games."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  shared_preferences: ^2.2.2
+  audioplayers: ^6.2.0
+  provider: ^6.1.1
+  path_provider: ^2.1.2
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  lottie: ^3.0.0
+  animated_text_kit: ^4.2.2
+  uuid: ^4.3.1
+  url_launcher: ^6.2.6
+  flutter_carplay: ^1.1.4
+  geolocator: ^14.0.2
+  latlong2: ^0.9.1
+  flutter_map: ^8.2.2
+  record: ^6.1.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/sounds/
+    - assets/images/

@@ -1,0 +1,145 @@
+name: Build iOS & Android Release
+
+on:
+  # Manual trigger from Actions tab
+  workflow_dispatch:
+    inputs:
+      build_platform:
+        description: 'Platform to build'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - ios
+          - android
+  
+  # Auto-trigger on push to main (optional - comment out if you want manual only)
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  build-ios:
+    name: Build iOS Release
+    runs-on: macos-latest
+    if: github.event_name == 'push' || github.event.inputs.build_platform == 'ios' || github.event.inputs.build_platform == 'both'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.x'
+        channel: 'stable'
+        cache: true
+        
+    - name: Flutter doctor
+      run: flutter doctor -v
+      
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Build iOS (unsigned)
+      run: flutter build ios --release --no-codesign
+      
+    - name: Create unsigned IPA
+      run: |
+        cd build/ios/iphoneos
+        mkdir -p Payload
+        cp -r Runner.app Payload/
+        zip -r ../../../road-trip-game-unsigned.ipa Payload
+        
+    - name: Upload iOS IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-release-unsigned
+        path: road-trip-game-unsigned.ipa
+        retention-days: 30
+        
+    - name: Build summary
+      run: |
+        echo "### iOS Build Complete! 🍎" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Build Type:** Unsigned IPA" >> $GITHUB_STEP_SUMMARY
+        echo "**File:** road-trip-game-unsigned.ipa" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "⚠️ **Note:** This IPA is unsigned. To install on device or submit to App Store, you need to sign it with your Apple Developer certificate." >> $GITHUB_STEP_SUMMARY
+
+  build-android:
+    name: Build Android Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.build_platform == 'android' || github.event.inputs.build_platform == 'both'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.x'
+        channel: 'stable'
+        cache: true
+        
+    - name: Flutter doctor
+      run: flutter doctor -v
+      
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Create dummy keystore (for CI)
+      run: |
+        mkdir -p android/app
+        echo "storePassword=dummy123" > android/key.properties
+        echo "keyPassword=dummy123" >> android/key.properties
+        echo "keyAlias=dummy" >> android/key.properties
+        echo "storeFile=dummy-keystore.jks" >> android/key.properties
+        keytool -genkey -v -keystore android/app/dummy-keystore.jks \
+          -keyalg RSA -keysize 2048 -validity 10000 -alias dummy \
+          -storepass dummy123 -keypass dummy123 \
+          -dname "CN=CI Build, OU=Dev, O=RoadTripGame, L=Unknown, S=Unknown, C=US"
+      
+    - name: Build Android APK
+      run: flutter build apk --release
+      
+    - name: Build Android App Bundle
+      run: flutter build appbundle --release
+      
+    - name: Rename outputs
+      run: |
+        cp build/app/outputs/flutter-apk/app-release.apk road-trip-game-release.apk
+        cp build/app/outputs/bundle/release/app-release.aab road-trip-game-release.aab
+        
+    - name: Upload Android APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk-release
+        path: road-trip-game-release.apk
+        retention-days: 30
+        
+    - name: Upload Android App Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-bundle-release
+        path: road-trip-game-release.aab
+        retention-days: 30
+        
+    - name: Build summary
+      run: |
+        echo "### Android Build Complete! 🤖" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**APK:** road-trip-game-release.apk" >> $GITHUB_STEP_SUMMARY
+        echo "**App Bundle:** road-trip-game-release.aab" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "⚠️ **Note:** These builds use a dummy keystore for CI. For production releases, build locally with your real keystore." >> $GITHUB_STEP_SUMMARY

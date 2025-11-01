@@ -1,0 +1,660 @@
+﻿import 'package:flutter/material.dart';
+
+class BingoCard {
+  final List<String> items;
+  final Set<int> spottedItems = {};
+
+  BingoCard({required this.items});
+
+  void toggleSpot(int index) {
+    if (spottedItems.contains(index)) {
+      spottedItems.remove(index);
+    } else {
+      spottedItems.add(index);
+    }
+  }
+
+  bool checkForBingo() {
+    // Add center (FREE) space automatically
+    final spots = {...spottedItems, 12};
+
+    // Check rows
+    for (var i = 0; i < 5; i++) {
+      if (List.generate(5, (j) => i * 5 + j).every(spots.contains)) {
+        return true;
+      }
+    }
+
+    // Check columns
+    for (var i = 0; i < 5; i++) {
+      if (List.generate(5, (j) => i + j * 5).every(spots.contains)) {
+        return true;
+      }
+    }
+
+    // Check diagonals
+    if (List.generate(5, (i) => i * 6).every(spots.contains)) {
+      return true;
+    }
+    if (List.generate(5, (i) => (i + 1) * 4).every(spots.contains)) {
+      return true;
+    }
+
+    return false;
+  }
+}
+
+class RoadTripBingoScreen extends StatefulWidget {
+  final List<String> players;
+
+  const RoadTripBingoScreen({
+    super.key,
+    required this.players,
+  });
+
+  @override
+  State<RoadTripBingoScreen> createState() => _RoadTripBingoScreenState();
+}
+
+class _RoadTripBingoScreenState extends State<RoadTripBingoScreen>
+    with TickerProviderStateMixin {
+  final Map<String, BingoCard> _playerCards = {};
+  bool _showRules = false;
+  late AnimationController _confettiController;
+  // Australia only
+  String _selectedRegion = 'Australia';
+
+  // Categories and items to spot (Australia only used)
+  final Map<String, Map<String, List<String>>> _regionCategories = {
+    'USA': {
+      'Vehicles': [
+        'Red Car',
+        'Blue Car',
+        'Police Car',
+        'Motorcycle',
+        'Truck',
+        'RV',
+        'School Bus',
+        'Taxi',
+        'Ambulance',
+        'Fire Truck',
+        'Sports Car',
+        'Moving Van',
+        'Convertible'
+      ],
+      'Buildings': [
+        'Gas Station',
+        'Church',
+        'McDonald\'s',
+        'Supermarket',
+        'School',
+        'Bank',
+        'Hotel',
+        'Hospital',
+        'Fire Station',
+        'Police Station',
+        'Restaurant',
+        'Shopping Mall',
+        'Walmart'
+      ],
+      'Road Signs': [
+        'Speed Limit',
+        'Stop Sign',
+        'Yield Sign',
+        'One Way',
+        'No Parking',
+        'Detour',
+        'Construction',
+        'Exit Sign',
+        'Rest Area',
+        'Food Sign',
+        'Gas Sign',
+        'Mile Marker',
+        'Interstate Sign',
+        'State Line Sign',
+        'No Turn on Red'
+      ],
+      'Nature': [
+        'Tree',
+        'River',
+        'Lake',
+        'Mountain',
+        'Bird',
+        'Dog',
+        'Cat',
+        'Horse',
+        'Cow',
+        'Deer',
+        'Flowers',
+        'Park',
+        'Cornfield'
+      ],
+      'Other': [
+        'Traffic Light',
+        'Bridge',
+        'Train Tracks',
+        'Bus Stop',
+        'Bike Rack',
+        'Mail Box',
+        'American Flag',
+        'Billboard',
+        'Playground',
+        'Crosswalk',
+        'Fire Hydrant',
+        'Picnic Area'
+      ],
+    },
+    'Australia': {
+      'Vehicles': [
+        'Ute',
+        'Caravan',
+        'Road Train',
+        'Police Car',
+        'Motorcycle',
+        'Truck',
+        'Station Wagon',
+        'Taxi',
+        'Ambulance',
+        'Fire Truck',
+        'Sports Car',
+        'Tour Bus',
+        'Holden'
+      ],
+      'Buildings': [
+        'Petrol Station',
+        'Pub',
+        'Woolworths',
+        'Coles',
+        'School',
+        'Post Office',
+        'Hotel',
+        'Hospital',
+        'Fire Station',
+        'Police Station',
+        'Cafe',
+        'Shopping Centre',
+        'Bunnings'
+      ],
+      'Road Signs': [
+        'Speed Limit',
+        'Stop Sign',
+        'Give Way',
+        'Kangaroos Ahead',
+        'No Standing',
+        'Road Work',
+        'School Zone',
+        'Exit',
+        'Rest Area',
+        'Food Sign',
+        'Fuel Sign',
+        'Distance Marker',
+        'Highway Sign',
+        'State Border',
+        'Railway Crossing'
+      ],
+      'Nature': [
+        'Gum Tree',
+        'Creek',
+        'Billabong',
+        'Hill',
+        'Kookaburra',
+        'Kangaroo',
+        'Emu',
+        'Horse',
+        'Cow',
+        'Sheep',
+        'Wattle',
+        'Park',
+        'Bush'
+      ],
+      'Other': [
+        'Traffic Light',
+        'Bridge',
+        'Train Tracks',
+        'Bus Stop',
+        'Bike Rack',
+        'Post Box',
+        'Australian Flag',
+        'Billboard',
+        'Playground',
+        'Pedestrian Crossing',
+        'BBQ Area',
+        'Surf Club'
+      ],
+    },
+    'UK': {
+      'Vehicles': [
+        'Red Car',
+        'Double-Decker Bus',
+        'Police Car',
+        'Motorcycle',
+        'Lorry',
+        'Caravan',
+        'Black Cab',
+        'Taxi',
+        'Ambulance',
+        'Fire Engine',
+        'Sports Car',
+        'Removal Van',
+        'Mini Cooper'
+      ],
+      'Buildings': [
+        'Petrol Station',
+        'Church',
+        'Tesco',
+        'Sainsbury\'s',
+        'School',
+        'Post Office',
+        'Hotel',
+        'Hospital',
+        'Fire Station',
+        'Police Station',
+        'Pub',
+        'Shopping Centre',
+        'Boots'
+      ],
+      'Road Signs': [
+        'Speed Limit',
+        'Stop Sign',
+        'Give Way',
+        'Roundabout',
+        'No Parking',
+        'Roadworks',
+        'School',
+        'Junction',
+        'Services',
+        'Tourist Sign',
+        'Petrol Sign',
+        'Distance Marker',
+        'Motorway Sign',
+        'County Border',
+        'Diversion'
+      ],
+      'Nature': [
+        'Oak Tree',
+        'River',
+        'Lake',
+        'Hill',
+        'Robin',
+        'Dog',
+        'Cat',
+        'Horse',
+        'Cow',
+        'Sheep',
+        'Flowers',
+        'Park',
+        'Hedgerow'
+      ],
+      'Other': [
+        'Traffic Light',
+        'Bridge',
+        'Railway Crossing',
+        'Bus Stop',
+        'Bike Rack',
+        'Post Box',
+        'Union Jack',
+        'Billboard',
+        'Playground',
+        'Zebra Crossing',
+        'Phone Box',
+        'Picnic Area'
+      ],
+    },
+    'Canada': {
+      'Vehicles': [
+        'Red Car',
+        'Blue Car',
+        'Police Car',
+        'Motorcycle',
+        'Truck',
+        'RV',
+        'School Bus',
+        'Taxi',
+        'Ambulance',
+        'Fire Truck',
+        'Sports Car',
+        'Moving Van',
+        'Pickup Truck'
+      ],
+      'Buildings': [
+        'Gas Station',
+        'Tim Hortons',
+        'Canadian Tire',
+        'Supermarket',
+        'School',
+        'Post Office',
+        'Hotel',
+        'Hospital',
+        'Fire Station',
+        'Police Station',
+        'Restaurant',
+        'Shopping Mall',
+        'Hockey Rink'
+      ],
+      'Road Signs': [
+        'Speed Limit',
+        'Stop/ArrÃªt Sign',
+        'Yield',
+        'One Way',
+        'No Parking',
+        'Construction',
+        'School Zone',
+        'Exit/Sortie',
+        'Rest Area',
+        'Food Sign',
+        'Gas Sign',
+        'Distance Marker',
+        'Highway Sign',
+        'Provincial Border',
+        'Deer Crossing'
+      ],
+      'Nature': [
+        'Pine Tree',
+        'River',
+        'Lake',
+        'Mountain',
+        'Goose',
+        'Dog',
+        'Cat',
+        'Horse',
+        'Cow',
+        'Moose',
+        'Maple Tree',
+        'Park',
+        'Forest'
+      ],
+      'Other': [
+        'Traffic Light',
+        'Bridge',
+        'Railway Crossing',
+        'Bus Stop',
+        'Bike Rack',
+        'Mail Box',
+        'Canadian Flag',
+        'Billboard',
+        'Playground',
+        'Crosswalk',
+        'Fire Hydrant',
+        'Picnic Area'
+      ],
+    },
+    'Other': {
+      'Vehicles': [
+        'Red Car',
+        'Blue Car',
+        'Police Car',
+        'Motorcycle',
+        'Truck',
+        'RV',
+        'Bus',
+        'Taxi',
+        'Ambulance',
+        'Fire Truck',
+        'Sports Car',
+        'Moving Van',
+        'Bicycle'
+      ],
+      'Buildings': [
+        'Gas/Petrol Station',
+        'Restaurant',
+        'Fast Food',
+        'Supermarket',
+        'School',
+        'Bank',
+        'Hotel',
+        'Hospital',
+        'Fire Station',
+        'Police Station',
+        'Shop',
+        'Shopping Center',
+        'Office Building'
+      ],
+      'Road Signs': [
+        'Speed Limit',
+        'Stop Sign',
+        'Yield/Give Way',
+        'One Way',
+        'No Parking',
+        'Road Work',
+        'School Zone',
+        'Exit',
+        'Rest Area',
+        'Food Sign',
+        'Gas/Petrol Sign',
+        'Distance Marker',
+        'Highway Sign',
+        'Border Sign',
+        'No Entry'
+      ],
+      'Nature': [
+        'Tree',
+        'River',
+        'Lake',
+        'Mountain',
+        'Bird',
+        'Dog',
+        'Cat',
+        'Horse',
+        'Cow',
+        'Wild Animal',
+        'Flowers',
+        'Park',
+        'Forest'
+      ],
+      'Other': [
+        'Traffic Light',
+        'Bridge',
+        'Railway Crossing',
+        'Bus Stop',
+        'Bike Rack',
+        'Mail/Post Box',
+        'Flag',
+        'Billboard',
+        'Playground',
+        'Crosswalk',
+        'Fire Hydrant',
+        'Picnic Area'
+      ],
+    },
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
+
+    // Generate a bingo card for each player
+    for (var player in widget.players) {
+      _playerCards[player] = _generateBingoCard();
+    }
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  // Generate a random bingo card (Australia)
+  BingoCard _generateBingoCard() {
+    final items = <String>[];
+    final regionCategories = _regionCategories['Australia']!;
+    final allItems = regionCategories.values.expand((items) => items).toList();
+
+    // Shuffle and take first 24 items (center is FREE)
+    allItems.shuffle();
+    items.addAll(allItems.take(24));
+
+    // Insert FREE space in the center (index 12)
+    items.insert(12, 'FREE');
+
+    return BingoCard(items: items);
+  }
+
+  void _toggleSpot(String player, int index) {
+    final card = _playerCards[player]!;
+    setState(() {
+      card.toggleSpot(index);
+
+      // Check for bingo after each spot
+      if (card.checkForBingo()) {
+        _showBingoAnimation(player);
+      }
+    });
+  }
+
+  void _showBingoAnimation(String player) {
+    _confettiController.forward(from: 0);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.celebration, color: Colors.amber),
+            const SizedBox(width: 8),
+            Text('BINGO for $player!'),
+          ],
+        ),
+        content: const Text('Congratulations! You got a BINGO!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continue Playing'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _playerCards[player] = _generateBingoCard();
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('New Card'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBingoCard(String player, BingoCard card) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Player header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.pink,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                player,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          // Bingo grid
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              childAspectRatio: 1,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
+            ),
+            itemCount: 25,
+            itemBuilder: (context, index) {
+              final item = card.items[index];
+              final isSpotted = card.spottedItems.contains(index);
+              final isFreeSpace = index == 12;
+
+              return InkWell(
+                onTap: isFreeSpace ? null : () => _toggleSpot(player, index),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSpotted
+                        ? Colors.pink.shade100
+                        : isFreeSpace
+                            ? Colors.pink.shade50
+                            : Colors.white,
+                    border: Border.all(
+                      color: Colors.pink.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Text(
+                        item,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: isFreeSpace || isSpotted
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+
+class _RuleItem extends StatelessWidget {
+  final String text;
+
+  const _RuleItem({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle, size: 16, color: Colors.pink.shade300),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
