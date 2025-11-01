@@ -26,17 +26,24 @@ jobs:
     name: Build iOS Release
     runs-on: macos-latest
     if: github.event_name == 'push' || github.event.inputs.build_platform == 'ios' || github.event.inputs.build_platform == 'both'
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0
+
+    - name: Configure Git
+      run: |
+        git config --global user.email "ci@github.com"
+        git config --global user.name "GitHub Actions"
+
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
         cache: true
-        
+
     - name: Flutter doctor
       run: flutter doctor -v
       
@@ -73,23 +80,30 @@ jobs:
     name: Build Android Release
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.inputs.build_platform == 'android' || github.event.inputs.build_platform == 'both'
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0
+
+    - name: Configure Git
+      run: |
+        git config --global user.email "ci@github.com"
+        git config --global user.name "GitHub Actions"
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-        
+
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
         cache: true
-        
+
     - name: Flutter doctor
       run: flutter doctor -v
       
