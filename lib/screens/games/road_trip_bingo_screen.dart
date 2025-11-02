@@ -27,7 +27,14 @@ class BingoCard {
 
 class RoadTripBingoScreen extends StatefulWidget {
   final List<String> players;
-  const RoadTripBingoScreen({super.key, required this.players});
+  final String? sessionId;
+
+  const RoadTripBingoScreen({
+    super.key,
+    required this.players,
+    this.sessionId,
+  });
+
   @override
   State<RoadTripBingoScreen> createState() => _RoadTripBingoScreenState();
 }

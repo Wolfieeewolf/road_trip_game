@@ -6,11 +6,13 @@ import '../../styles/spacing.dart';
 class NumberPlateMatchScreen extends StatefulWidget {
   final List<String> players;
   final Map<String, String> playerNumbers;
+  final String? sessionId;
 
   const NumberPlateMatchScreen({
     super.key,
     required this.players,
     required this.playerNumbers,
+    this.sessionId,
   });
 
   @override

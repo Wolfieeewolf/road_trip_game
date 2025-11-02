@@ -23,7 +23,15 @@
       "Bash(flutter pub get:*)",
       "Bash(flutter --version:*)",
       "Bash(flutter upgrade:*)",
-      "Bash(flutter pub upgrade:*)"
+      "Bash(flutter pub upgrade:*)",
+      "Bash(gh release create:*)",
+      "Bash(git tag:*)",
+      "Bash(flutter build:*)",
+      "Bash(adb devices:*)",
+      "Bash(copy:*)",
+      "Bash(explorer.exe \"D:\\New HD\\MCP\\road_trip_game\")",
+      "Bash(del \"D:\\New HD\\MCP\\road_trip_game\\road-trip-game-v1.0.1.apk\")",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

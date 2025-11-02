@@ -6,11 +6,15 @@ import '../../styles/spacing.dart';
 class SignScrambleScreen extends StatefulWidget {
   final List<String> players;
   final Map<String, List<String>> playerSigns;
+  final String? sessionId;
+
   const SignScrambleScreen({
     super.key,
     required this.players,
     required this.playerSigns,
+    this.sessionId,
   });
+
   @override
   State<SignScrambleScreen> createState() => _SignScrambleScreenState();
 }

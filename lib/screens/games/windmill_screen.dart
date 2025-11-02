@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart' as ll;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../services/firebase/game_session_service.dart';
 import '../../services/location/location_service.dart';
 import '../../services/windmill/windmill_types.dart';
 import '../../styles/game_colors.dart';
@@ -17,11 +18,13 @@ import '../../widgets/mini_map.dart';
 class WindmillScreen extends StatefulWidget {
   final List<String> players;
   final Map<String, dynamic> config;
+  final String? sessionId;
 
   const WindmillScreen({
     super.key,
     required this.players,
     this.config = const {},
+    this.sessionId,
   });
 
   @override
@@ -49,6 +52,8 @@ class _WindmillScreenState extends State<WindmillScreen>
   late final Animation<double> _spinAnimation;
 
   StreamSubscription<Position>? _posSub;
+  StreamSubscription? _sessionSub;
+  final GameSessionService _sessionService = GameSessionService();
 
   @override
   void initState() {
@@ -65,12 +70,46 @@ class _WindmillScreenState extends State<WindmillScreen>
       CurvedAnimation(parent: _spinController, curve: Curves.easeInOut),
     );
     _initLocationAndLoad();
+    _initFirebaseSync();
+  }
+
+  void _initFirebaseSync() {
+    if (widget.sessionId == null) return;
+
+    // Listen to session changes for real-time score sync
+    _sessionSub = _sessionService.watchSession(widget.sessionId!).listen((session) {
+      if (session == null) return;
+
+      // Update scores from Firebase
+      setState(() {
+        for (final player in widget.players) {
+          final firebaseScore = session.scores[player] ?? 0;
+          _scores[player] = firebaseScore.toDouble();
+        }
+      });
+    });
+  }
+
+  Future<void> _syncScoreToFirebase(String player) async {
+    if (widget.sessionId == null) return;
+
+    try {
+      final score = (_scores[player] ?? 0).toInt();
+      await _sessionService.updateScore(
+        sessionCode: widget.sessionId!,
+        playerName: player,
+        score: score,
+      );
+    } catch (e) {
+      // Silently fail - offline mode
+    }
   }
 
   @override
   void dispose() {
     _spinController.dispose();
     _posSub?.cancel();
+    _sessionSub?.cancel();
     super.dispose();
   }
 
@@ -230,6 +269,7 @@ class _WindmillScreenState extends State<WindmillScreen>
     });
     _playSpin();
     await _persistPins();
+    await _syncScoreToFirebase(player);
   }
 
   Future<void> _updateExistingPinFlow(_WindmillPin pin, String player) async {
@@ -331,6 +371,7 @@ class _WindmillScreenState extends State<WindmillScreen>
       });
       _playSpin();
       await _persistPins();
+      await _syncScoreToFirebase(player);
     } else if (result.deltaCount == 0 && result.awardPoints == false) {
       // Just record the visit with zero points
       setState(() {

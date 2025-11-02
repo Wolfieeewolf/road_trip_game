@@ -8,11 +8,13 @@ import '../../styles/spacing.dart';
 class ColorChaseScreen extends StatefulWidget {
   final List<String> players;
   final Map<String, String> playerColors;
+  final String? sessionId;
 
   const ColorChaseScreen({
     super.key,
     required this.players,
     required this.playerColors,
+    this.sessionId,
   });
 
   @override

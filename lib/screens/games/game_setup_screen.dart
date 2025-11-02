@@ -1395,7 +1395,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
                                     GamesScreen(
-                              gameId: widget.gameId,
+                              gameType: widget.gameId,
                               players: _players,
                               playerNumbers: _playerNumbers,
                               playerSounds: _buildSoundSelectionsForGame(),

@@ -8,12 +8,14 @@ class SoundSpyScreen extends StatefulWidget {
   final List<String> players;
   final Map<String, String> playerSounds;
   final Map<String, String> spyObjects;
+  final String? sessionId;
 
   const SoundSpyScreen({
     super.key,
     required this.players,
     required this.playerSounds,
     required this.spyObjects,
+    this.sessionId,
   });
 
   @override
