@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../styles/card_styles.dart';
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
-import '../../styles/text_styles.dart';
 
 class SignScrambleScreen extends StatefulWidget {
   final List<String> players;

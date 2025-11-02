@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'car_scoreboard.dart';

@@ -11,10 +11,6 @@ import '../../services/auth/auth_controller.dart';
 import '../../services/friends/friends_controller.dart';
 import '../../services/link/link_controller.dart';
 import '../../services/windmill/windmill_types.dart';
-import '../../styles/card_styles.dart';
-import '../../styles/game_colors.dart';
-import '../../styles/spacing.dart';
-import '../../styles/text_styles.dart';
 import 'games_screen.dart';
 
 class GameSetupScreen extends StatefulWidget {

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../styles/game_colors.dart';
 import '../styles/spacing.dart';
-import '../utils/game_constants.dart';
 import 'games/game_setup_screen.dart';
 
 class Game {

@@ -1,10 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
-import '../../styles/card_styles.dart';
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
-import '../../styles/text_styles.dart';
 
 class SoundSpyScreen extends StatefulWidget {
   final List<String> players;
@@ -537,23 +535,29 @@ class _ScoreDisplay extends StatelessWidget {
           label,
           style: const TextStyle(
             color: Colors.grey,
+            fontSize: 12,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           '$score',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 28,
             fontWeight: FontWeight.bold,
             color: GameColors.primaryColors['soundSpy']!,
           ),
         ),
-        ElevatedButton.icon(
-          onPressed: onAdd,
-          icon: const Icon(Icons.add),
-          label: const Text('+1'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: GameColors.primaryColors['soundSpy']!,
-            foregroundColor: Colors.white,
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onAdd,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GameColors.primaryColors['soundSpy']!,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text('+1', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
       ],

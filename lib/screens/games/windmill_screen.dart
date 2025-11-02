@@ -4,17 +4,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../services/location/location_service.dart';
 import '../../services/windmill/windmill_types.dart';
-import '../../styles/card_styles.dart';
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
-import '../../styles/text_styles.dart';
 import '../../widgets/mini_map.dart';
 
 class WindmillScreen extends StatefulWidget {
@@ -563,7 +560,7 @@ class _WindmillScreenState extends State<WindmillScreen>
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.82,
+        childAspectRatio: 0.72,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -601,11 +598,9 @@ class _WindmillScreenState extends State<WindmillScreen>
                 Expanded(
                   child: Text(
                     player,
-                    style: GoogleFonts.poppins(
-                      textStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -615,24 +610,31 @@ class _WindmillScreenState extends State<WindmillScreen>
               ],
             ),
             const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleSpot(player),
-                    icon: const Icon(Icons.add_location_alt_outlined),
-                    label: const Text('Spotted!'),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _handleSpot(player),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: GameColors.primaryColors['windmill']!,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                const SizedBox(width: Spacing.sm),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => setState(() => _undoLastFor(player)),
-                    icon: const Icon(Icons.undo),
-                    label: const Text('Undo'),
-                  ),
+                icon: const Icon(Icons.add_location_alt_outlined, size: 20),
+                label: const Text('Spotted!'),
+              ),
+            ),
+            const SizedBox(height: Spacing.xs),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _undoLastFor(player)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(color: GameColors.primaryColors['windmill']!),
                 ),
-              ],
+                icon: const Icon(Icons.undo, size: 18),
+                label: const Text('Undo'),
+              ),
             ),
           ],
         ),
