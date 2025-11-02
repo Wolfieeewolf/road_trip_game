@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -108,27 +107,26 @@ class RoadTripGamesApp extends StatelessWidget {
         colorScheme: baseColorScheme,
         scaffoldBackgroundColor: baseColorScheme.surface,
         useMaterial3: true,
-        textTheme: GoogleFonts.poppinsTextTheme().copyWith(
-          headlineLarge: GoogleFonts.poppins(
+        textTheme: const TextTheme(
+          headlineLarge: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 32,
-            color: baseColorScheme.onSurface,
           ),
-          titleLarge: GoogleFonts.poppins(
+          titleLarge: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
-            color: baseColorScheme.onSurface,
           ),
-          bodyLarge: GoogleFonts.poppins(
+          bodyLarge: TextStyle(
             fontWeight: FontWeight.w400,
             fontSize: 16,
-            color: baseColorScheme.onSurfaceVariant,
           ),
-          labelLarge: GoogleFonts.poppins(
+          labelLarge: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 15,
-            color: baseColorScheme.onPrimary,
           ),
+        ).apply(
+          bodyColor: baseColorScheme.onSurface,
+          displayColor: baseColorScheme.onSurface,
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
@@ -137,7 +135,7 @@ class RoadTripGamesApp extends StatelessWidget {
           centerTitle: true,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
-          titleTextStyle: GoogleFonts.poppins(
+          titleTextStyle: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
             color: baseColorScheme.onSurface,
@@ -185,7 +183,7 @@ class RoadTripGamesApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: GoogleFonts.poppins(
+            textStyle: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
@@ -200,7 +198,7 @@ class RoadTripGamesApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: GoogleFonts.poppins(
+            textStyle: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
@@ -216,7 +214,7 @@ class RoadTripGamesApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: GoogleFonts.poppins(
+            textStyle: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
@@ -226,12 +224,12 @@ class RoadTripGamesApp extends StatelessWidget {
           backgroundColor: baseColorScheme.surfaceContainerLow,
           selectedColor: baseColorScheme.primaryContainer,
           disabledColor: baseColorScheme.surfaceContainerHigh,
-          labelStyle: GoogleFonts.poppins(
+          labelStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: baseColorScheme.onSurfaceVariant,
           ),
-          secondaryLabelStyle: GoogleFonts.poppins(
+          secondaryLabelStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: baseColorScheme.primary,
@@ -253,12 +251,12 @@ class RoadTripGamesApp extends StatelessWidget {
           ),
           contentPadding:
               const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
-          titleTextStyle: GoogleFonts.poppins(
+          titleTextStyle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: baseColorScheme.onSurface,
           ),
-          subtitleTextStyle: GoogleFonts.poppins(
+          subtitleTextStyle: TextStyle(
             fontSize: 14,
             color: baseColorScheme.onSurfaceVariant,
           ),
