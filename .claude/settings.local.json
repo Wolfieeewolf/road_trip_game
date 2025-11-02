@@ -19,7 +19,11 @@
       "Bash(git rm:*)",
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter --version:*)",
+      "Bash(flutter upgrade:*)",
+      "Bash(flutter pub upgrade:*)"
     ],
     "deny": [],
     "ask": []
