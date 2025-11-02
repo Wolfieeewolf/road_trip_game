@@ -31,7 +31,9 @@
       "Bash(copy:*)",
       "Bash(explorer.exe \"D:\\New HD\\MCP\\road_trip_game\")",
       "Bash(del \"D:\\New HD\\MCP\\road_trip_game\\road-trip-game-v1.0.1.apk\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(adb install:*)",
+      "Bash(flutter install)"
     ],
     "deny": [],
     "ask": []
