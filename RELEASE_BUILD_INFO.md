@@ -7,6 +7,28 @@
 
 ## Build Outputs
 
+### iOS Build (via GitHub Actions)
+
+**File:** `road-trip-game-unsigned.ipa`
+**Size:** 7.44 MB
+**Location:** GitHub Actions artifacts (downloaded from Actions tab)
+
+**Use for:**
+- Distribution to family members via AltStore (free sideloading)
+- Testing on iOS devices without Apple Developer account
+- Family/private distribution (4-5 people)
+
+**How to get the IPA:**
+1. Go to https://github.com/Wolfieeewolf/road_trip_game/actions
+2. Click on the most recent successful workflow run
+3. Scroll down to "Artifacts" section
+4. Download `ios-release-unsigned` (7.44 MB)
+5. Extract the .zip file to get `road-trip-game-unsigned.ipa`
+
+**Next steps:** See "iOS Distribution via AltStore" section below
+
+---
+
 ### 1. Android APK (Direct Installation)
 
 **File:** `app-release.apk`
@@ -79,6 +101,254 @@ Both builds include full support for:
 - Use Desktop Head Unit (DHU) for Android Auto testing
 - Test in actual car for best experience
 - Refer to `ANDROID_AUTO_DEBUG.md` for troubleshooting
+
+---
+
+## iOS Distribution via AltStore (Free Family Distribution)
+
+### What is AltStore?
+
+AltStore is a **free** alternative app store for iOS that allows you to sideload apps without jailbreaking or paying for Apple Developer account. Perfect for distributing your app to 4-5 family members!
+
+**Key Features:**
+- ✅ Completely free (no $99/year Apple Developer fee)
+- ✅ Works on all iPhones running iOS 14.0+
+- ✅ Apps auto-refresh in background (won't expire every 7 days)
+- ✅ Easy installation via WiFi
+- ✅ No jailbreak required
+
+**Limitations:**
+- Maximum 3 apps per Apple ID (enough for your needs)
+- Requires AltServer running on your PC when refreshing apps
+- Each family member needs to install AltStore on their device
+
+---
+
+### Step 1: Set Up AltStore on Your Windows PC
+
+**Download and Install:**
+
+1. **Download AltServer for Windows**
+   - Go to https://altstore.io/
+   - Click "Download AltServer for Windows"
+   - Save `AltServer.zip` to your computer
+
+2. **Install iTunes and iCloud**
+   - Download iTunes from https://www.apple.com/itunes/download/win64
+   - Download iCloud from https://support.apple.com/en-us/HT204283
+   - Install both (required for AltServer to communicate with iPhones)
+   - Restart your computer after installation
+
+3. **Extract and Run AltServer**
+   - Extract `AltServer.zip` to a folder (e.g., `C:\Program Files\AltServer`)
+   - Run `AltServer.exe`
+   - You'll see an AltStore icon in your system tray (notification area)
+
+---
+
+### Step 2: Install AltStore on Each Family Member's iPhone
+
+**For each iPhone that needs the app:**
+
+1. **Connect iPhone to PC via USB**
+   - Use a Lightning to USB cable
+   - Make sure the iPhone is unlocked
+
+2. **Trust the Computer**
+   - On the iPhone, tap "Trust" when prompted
+   - Enter iPhone passcode if asked
+
+3. **Install AltStore via AltServer**
+   - Right-click the AltStore icon in your system tray
+   - Hover over "Install AltStore"
+   - Select the connected iPhone from the list
+   - Enter your Apple ID and password when prompted
+   - **Note:** Use the family member's Apple ID (the one they use for App Store)
+
+4. **Wait for Installation**
+   - AltServer will install AltStore on the iPhone
+   - Takes 1-2 minutes
+   - You'll see "AltStore installed successfully" message
+
+5. **Trust the Developer Certificate**
+   - On the iPhone, go to: **Settings** → **General** → **VPN & Device Management**
+   - Find your Apple ID under "Developer App"
+   - Tap it and tap "Trust [Your Apple ID]"
+   - Tap "Trust" again to confirm
+
+---
+
+### Step 3: Install Road Trip Game via AltStore
+
+**On each family member's iPhone:**
+
+1. **Download the IPA to your PC**
+   - Go to https://github.com/Wolfieeewolf/road_trip_game/actions
+   - Download the latest `ios-release-unsigned` artifact
+   - Extract `road-trip-game-unsigned.ipa`
+
+2. **Method A: Install via WiFi (Recommended)**
+   - Make sure iPhone and PC are on the same WiFi network
+   - On iPhone, open the AltStore app
+   - Tap "My Apps" tab
+   - Tap the "+" button in the top-left corner
+   - It will show available IPAs from your PC
+   - If the file doesn't appear:
+     - On PC, right-click AltStore tray icon → "Settings"
+     - Note the WiFi server address (e.g., "192.168.1.100:65432")
+     - On iPhone in AltStore, manually enter this address if prompted
+
+3. **Method B: Install via USB (If WiFi doesn't work)**
+   - Connect iPhone to PC via USB
+   - On PC, right-click AltStore tray icon
+   - Click "Sideload .ipa..."
+   - Select the iPhone from the list
+   - Browse to `road-trip-game-unsigned.ipa`
+   - Enter Apple ID password if prompted
+   - Wait for installation (1-2 minutes)
+
+4. **App Installed!**
+   - Road Trip Game will appear on the iPhone home screen
+   - First launch may show "Untrusted Developer" warning
+   - Go to **Settings** → **General** → **VPN & Device Management**
+   - Trust the developer certificate if needed
+
+---
+
+### Step 4: Enable Auto-Refresh (Important!)
+
+Without auto-refresh, apps expire every 7 days and need to be reinstalled. Here's how to prevent that:
+
+**One-Time Setup per iPhone:**
+
+1. **Enable Background Refresh for AltStore**
+   - On iPhone: **Settings** → **AltStore**
+   - Enable "Background App Refresh"
+
+2. **Keep AltServer Running on Your PC**
+   - AltServer.exe should always be running on your PC
+   - It will auto-start when you login (by default)
+   - The iPhone connects to it automatically over WiFi to refresh apps
+
+3. **How Auto-Refresh Works**
+   - When the iPhone is on the same WiFi as your PC
+   - And AltServer is running
+   - AltStore automatically refreshes all sideloaded apps every 7 days
+   - This happens in the background, no user action needed
+
+**Important Notes:**
+- Your PC doesn't need to be on 24/7
+- Just needs to be on occasionally when the iPhone is nearby
+- If you miss a refresh and app expires, just open AltStore and tap "Refresh All"
+- Family members who don't live with you: They can manually refresh when visiting, or you can send them updated IPAs to install
+
+---
+
+### Distributing to Family Members Who Live Elsewhere
+
+If family members don't live with you and can't access your PC regularly:
+
+**Option 1: One-Time Setup Visit**
+1. Set up AltStore on their iPhone when they visit
+2. Install Road Trip Game
+3. Give them the IPA file to keep
+4. They can use their own PC with AltServer to refresh (requires setting up AltServer on their PC)
+
+**Option 2: Manual Refresh When Visiting**
+1. Set up their iPhone when they visit
+2. When app expires (every 7 days), they reinstall via AltStore when visiting again
+3. Or they set up AltServer on their own PC
+
+**Option 3: Share IPA for Their Own AltServer**
+1. Send them `road-trip-game-unsigned.ipa` via email or cloud storage
+2. They install AltServer on their own Windows/Mac PC
+3. They install AltStore on their iPhone via their own PC
+4. They sideload the IPA file themselves
+5. Their own AltServer handles auto-refresh
+
+**Recommended:** Option 3 for maximum independence
+
+---
+
+### Updating the App (Future Versions)
+
+When you make changes and want to release updates:
+
+1. **Build New Version**
+   - Update `version:` in `pubspec.yaml` (e.g., `1.0.1+2`)
+   - Push changes to GitHub
+   - GitHub Actions will build new IPA automatically
+   - Download new IPA from Actions artifacts
+
+2. **Distribute to Family**
+   - Send new IPA file via email, cloud storage, or shared folder
+   - Or share the GitHub Actions artifact download link
+
+3. **Family Members Install Update**
+   - Open AltStore on iPhone
+   - Tap "My Apps"
+   - Tap Road Trip Game
+   - Tap "Update" or "Sideload"
+   - Select the new IPA file
+   - App will update while preserving user data
+
+**Note:** Updates keep game data (achievements, statistics, friends list) intact
+
+---
+
+### Troubleshooting AltStore
+
+**Problem: "Could not find AltServer"**
+- Solution: Make sure AltServer.exe is running on your PC (check system tray)
+- Make sure iPhone and PC are on the same WiFi network
+- Disable VPN on both devices temporarily
+
+**Problem: "Maximum number of apps reached"**
+- Solution: Each Apple ID can have max 3 sideloaded apps
+- Remove an app in AltStore to make room
+
+**Problem: "App expired / Needs to be refreshed"**
+- Solution 1: Open AltStore app, tap "Refresh All"
+- Solution 2: Make sure AltServer is running on your PC
+- Solution 3: Connect iPhone to PC and manually refresh
+
+**Problem: iTunes/iCloud not detected**
+- Solution: Install iTunes and iCloud for Windows from Apple's website
+- Restart computer after installation
+- Don't use Microsoft Store versions
+
+**Problem: "Unable to Sign App"**
+- Solution: Enter your Apple ID credentials again
+- Make sure you're using the same Apple ID as the iPhone
+- If using 2-factor authentication, generate app-specific password
+
+---
+
+### Quick Start Checklist for Family Members
+
+**Print or share this checklist with each family member:**
+
+**Before Your iPhone Can Use the App:**
+- [ ] Download and install AltStore from https://altstore.io/ (help needed from person with Windows PC)
+- [ ] Trust the developer certificate in iPhone Settings
+- [ ] Install Road Trip Game IPA via AltStore
+- [ ] Enable Background App Refresh for AltStore
+
+**Using the App:**
+- [ ] Open Road Trip Game from home screen
+- [ ] Create or join a game session
+- [ ] Use session code to play with others
+- [ ] Check achievements and statistics
+
+**Keeping the App Active:**
+- [ ] Make sure AltStore background refresh is enabled
+- [ ] Keep AltServer running on a PC you have access to
+- [ ] Or manually refresh every 7 days by opening AltStore
+
+**CarPlay Support:**
+- [ ] Connect iPhone to car via USB or Bluetooth
+- [ ] CarPlay should show "Road Trip Games"
+- [ ] Start a game on phone, scoreboard appears on car display
 
 ---
 
