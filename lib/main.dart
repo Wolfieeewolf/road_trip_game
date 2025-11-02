@@ -18,8 +18,15 @@ import 'services/link/link_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Initialize Firebase (optional - app works without it)
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    // Firebase initialization failed - app will work in offline mode
+    if (kDebugMode) {
+      print('Firebase initialization failed: $e');
+    }
+  }
 
   final prefs = await SharedPreferences.getInstance();
 
