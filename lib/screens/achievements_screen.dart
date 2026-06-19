@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../styles/app_theme.dart';
 import '../styles/spacing.dart';
+import '../widgets/game_fx.dart';
+import '../widgets/game_shell.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -26,6 +29,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
     // Simulate loading from storage
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
 
     setState(() {
       // Removed Number Plate Classic achievements
@@ -142,46 +146,51 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   }
 
   Widget _buildRankCard() {
-    return Card(
-      elevation: 4,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary],
+    return Container(
+      padding: const EdgeInsets.all(Spacing.lg2),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.seed.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-        ),
-        padding: const EdgeInsets.all(Spacing.lg),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.military_tech,
-                  color: Colors.white,
-                  size: 32,
-                ),
-                const SizedBox(width: Spacing.sm),
-                Text(
-                  _currentRank,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+        ],
+      ),
+      child: Column(
+        children: [
+          const PulseGlow(
+            child: Text('🏆', style: TextStyle(fontSize: 44)),
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            _currentRank,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
             ),
-            const SizedBox(height: 8),
-            Text(
-              '$_totalPoints Points',
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '$_totalPoints points',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -189,104 +198,95 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   Widget _buildAchievementCard(Achievement achievement) {
     final isLocked = !achievement.isUnlocked;
     final progress = (achievement.progress / achievement.total * 100).toInt();
+    final accent = isLocked ? Colors.grey : AppTheme.accentViolet;
 
-    return Card(
-      elevation: 4,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isLocked ? Colors.grey.shade100 : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Stack(
+    return GamePanel(
+      accent: isLocked ? null : const Color(0xFFFFC107),
+      margin: const EdgeInsets.only(bottom: Spacing.md),
+      child: Opacity(
+        opacity: isLocked ? 0.65 : 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isLocked)
-              Positioned.fill(
-                child: Container(
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    isLocked ? Icons.lock_rounded : achievement.icon,
+                    color: accent,
+                    size: 24,
                   ),
                 ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        achievement.icon,
-                        color: isLocked ? Colors.grey : Theme.of(context).colorScheme.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(width: Spacing.sm),
-                      Expanded(
-                        child: Text(
-                          achievement.title,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isLocked ? Colors.grey : Colors.black,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.sm,
-                          vertical: Spacing.xs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isLocked
-                              ? Colors.grey.shade300
-                              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${achievement.points} pts',
-                          style: TextStyle(
-                            color:
-                                isLocked ? Colors.grey : Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                const SizedBox(width: Spacing.md),
+                Expanded(
+                  child: Text(
+                    achievement.title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: Spacing.sm),
-                  Text(
-                    achievement.description,
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.sm2,
+                    vertical: Spacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${achievement.points} pts',
                     style: TextStyle(
-                      color: isLocked ? Colors.grey : Colors.black87,
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: Spacing.sm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: achievement.progress / achievement.total,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isLocked ? Colors.grey : Theme.of(context).colorScheme.primary,
-                            ),
-                            minHeight: 8,
-                          ),
-                        ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Spacing.sm),
+            Text(
+              achievement.description,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: Spacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 700),
+                      curve: Curves.easeOutCubic,
+                      tween: Tween(
+                        end: achievement.progress / achievement.total,
                       ),
-                      const SizedBox(width: Spacing.sm),
-                      Text(
-                        '$progress%',
-                        style: TextStyle(
-                          color: isLocked ? Colors.grey : Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      builder: (context, value, _) => LinearProgressIndicator(
+                        value: value,
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                        minHeight: 8,
                       ),
-                    ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: Spacing.sm),
+                Text(
+                  '$progress%',
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -296,28 +296,30 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Achievements'),
-      ),
+    return GameShell(
+      title: 'Achievements',
+      subtitle: 'Milestones from the open road',
+      color: AppTheme.accentViolet,
+      icon: Icons.emoji_events_rounded,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(Spacing.lg),
               children: [
-                _buildRankCard(),
+                FadeSlideIn(child: _buildRankCard()),
                 const SizedBox(height: Spacing.xl),
 
-                // Number Plate Classic removed
-
                 // Number Match Achievements
-                const _CategoryHeader(
-                  title: 'Number Match',
-                  icon: Icons.format_list_numbered,
+                const FadeSlideIn(
+                  delay: Duration(milliseconds: 80),
+                  child: _CategoryHeader(
+                    title: 'Number Match',
+                    icon: Icons.format_list_numbered,
+                  ),
                 ),
                 ..._achievements['numberPlateMatch']!
                     .map(_buildAchievementCard),
-                const SizedBox(height: Spacing.xl),
+                const SizedBox(height: Spacing.lg),
 
                 // Sound Spy Achievements
                 const _CategoryHeader(
@@ -325,7 +327,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   icon: Icons.volume_up,
                 ),
                 ..._achievements['soundSpy']!.map(_buildAchievementCard),
-                const SizedBox(height: Spacing.xl),
+                const SizedBox(height: Spacing.lg),
 
                 // Windmill Achievements
                 const _CategoryHeader(
@@ -371,19 +373,11 @@ class _CategoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: Spacing.lg),
-      child: Row(
-        children: [
-          Icon(icon, size: 24),
-          const SizedBox(width: Spacing.sm),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: Spacing.md),
+      child: GameSectionTitle(
+        icon: icon,
+        title: title,
+        color: AppTheme.accentViolet,
       ),
     );
   }

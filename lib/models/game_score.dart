@@ -206,11 +206,11 @@ class NumberPlateScoreDetails {
   });
 
   Map<String, dynamic> toJson() => {
-    'plates': plates,
-    'regularPlates': regularPlates,
-    'specialPlates': specialPlates,
-    'uniqueStates': uniqueStates,
-  };
+        'plates': plates,
+        'regularPlates': regularPlates,
+        'specialPlates': specialPlates,
+        'uniqueStates': uniqueStates,
+      };
 
   factory NumberPlateScoreDetails.fromJson(Map<String, dynamic> json) {
     return NumberPlateScoreDetails(
@@ -238,12 +238,12 @@ class SoundSpyScoreDetails {
   });
 
   Map<String, dynamic> toJson() => {
-    'sound': sound,
-    'object': object,
-    'spots': spots,
-    'correctGuesses': correctGuesses,
-    'guessedBy': guessedBy,
-  };
+        'sound': sound,
+        'object': object,
+        'spots': spots,
+        'correctGuesses': correctGuesses,
+        'guessedBy': guessedBy,
+      };
 
   factory SoundSpyScoreDetails.fromJson(Map<String, dynamic> json) {
     return SoundSpyScoreDetails(
@@ -268,10 +268,10 @@ class WindmillScoreDetails {
   });
 
   Map<String, dynamic> toJson() => {
-    'windmillCount': windmillCount,
-    'streak': streak,
-    'windmillLocations': windmillLocations.map((l) => l.toJson()).toList(),
-  };
+        'windmillCount': windmillCount,
+        'streak': streak,
+        'windmillLocations': windmillLocations.map((l) => l.toJson()).toList(),
+      };
 
   factory WindmillScoreDetails.fromJson(Map<String, dynamic> json) {
     return WindmillScoreDetails(
@@ -324,5 +324,3 @@ final jsonData = updatedScore.toJson();
 // Later, restore score
 final restoredScore = GameScore.fromJson(jsonData);
 */
-
-

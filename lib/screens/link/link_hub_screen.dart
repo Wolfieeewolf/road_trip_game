@@ -9,7 +9,9 @@ import '../../services/friends/friend_contact.dart';
 import '../../services/friends/friends_controller.dart';
 import '../../services/link/link_controller.dart';
 import '../../services/link/link_session.dart';
+import '../../styles/app_theme.dart';
 import '../../styles/spacing.dart';
+import '../../widgets/app_background.dart';
 import '../game_selection_screen.dart';
 import 'friends_manager_screen.dart';
 import 'widgets/friend_selection_sheet.dart';
@@ -41,39 +43,46 @@ class _LinkHubScreenState extends State<LinkHubScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Friends & Linking'),
+        title: const Text('Friends & Link'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => link.refreshSession(),
-        child: ListView(
-          padding: const EdgeInsets.all(Spacing.lg),
-          children: [
-            _buildProfileCard(theme, auth),
-            const SizedBox(height: Spacing.lg),
-            _buildFriendsCard(theme, friends, link),
-            const SizedBox(height: Spacing.lg),
-            if (link.error != null && link.error!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Spacing.lg),
-                child: Container(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    link.error!,
-                    style: TextStyle(color: theme.colorScheme.error),
+      body: AppBackground(
+        child: RefreshIndicator(
+          onRefresh: () => link.refreshSession(),
+          color: AppTheme.seed,
+          child: ListView(
+            padding: const EdgeInsets.all(Spacing.lg),
+            children: [
+              _buildProfileCard(theme, auth),
+              const SizedBox(height: Spacing.lg),
+              _buildFriendsCard(theme, friends, link),
+              const SizedBox(height: Spacing.lg),
+              if (link.error != null && link.error!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Spacing.lg),
+                  child: Container(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      link.error!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
                   ),
                 ),
-              ),
-            if (session == null)
-              _buildNoSessionCard(theme, link)
-            else
-              _buildActiveSessionCard(theme, link, session),
-            const SizedBox(height: Spacing.lg),
-            if (session == null) _buildJoinCard(theme, link),
-          ],
+              if (session == null)
+                _buildNoSessionCard(theme, link)
+              else
+                _buildActiveSessionCard(theme, link, session),
+              const SizedBox(height: Spacing.lg),
+              if (session == null) _buildJoinCard(theme, link),
+            ],
+          ),
         ),
       ),
     );
@@ -177,8 +186,8 @@ class _LinkHubScreenState extends State<LinkHubScreen> {
                 ),
                 const SizedBox(width: Spacing.sm),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.sm, vertical: Spacing.xxs),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -370,8 +379,7 @@ class _LinkHubScreenState extends State<LinkHubScreen> {
 
   Future<void> _launchSms(List<String> recipients, String body) async {
     if (recipients.isEmpty) return;
-    final separator =
-        defaultTargetPlatform == TargetPlatform.iOS ? ',' : ';';
+    final separator = defaultTargetPlatform == TargetPlatform.iOS ? ',' : ';';
     final path = recipients.join(separator);
     final uri = Uri(
       scheme: 'sms',

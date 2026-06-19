@@ -1,17 +1,30 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../../models/game_session.dart';
 
+/// Firebase Realtime Database wrapper for multiplayer sessions.
+///
+/// Safe to construct even when [Firebase.initializeApp] failed (e.g. desktop
+/// builds without platform config) — all operations become no-ops.
 class GameSessionService {
-  final FirebaseDatabase _database = FirebaseDatabase.instance;
   static const String _sessionsPath = 'sessions';
+
+  /// Whether a default Firebase app was initialized at startup.
+  static bool get isAvailable => Firebase.apps.isNotEmpty;
+
+  FirebaseDatabase? get _database {
+    if (!isAvailable) return null;
+    return FirebaseDatabase.instance;
+  }
 
   // Generate a random 6-character session code
   String generateSessionCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars
+    const chars =
+        'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars
     final random = Random();
     return List.generate(6, (index) => chars[random.nextInt(chars.length)])
         .join();
@@ -23,14 +36,19 @@ class GameSessionService {
     required String hostId,
     required List<String> players,
   }) async {
+    final database = _database;
+    if (database == null) {
+      throw StateError('Firebase is not configured on this device.');
+    }
+
     // Generate a unique session code
     String sessionCode = generateSessionCode();
 
     // Check if code already exists (rare but possible)
-    var snapshot = await _database.ref('$_sessionsPath/$sessionCode').get();
+    var snapshot = await database.ref('$_sessionsPath/$sessionCode').get();
     while (snapshot.exists) {
       sessionCode = generateSessionCode();
-      snapshot = await _database.ref('$_sessionsPath/$sessionCode').get();
+      snapshot = await database.ref('$_sessionsPath/$sessionCode').get();
     }
 
     final session = GameSession.create(
@@ -41,7 +59,7 @@ class GameSessionService {
     );
 
     // Save to Firebase
-    await _database.ref('$_sessionsPath/$sessionCode').set(session.toJson());
+    await database.ref('$_sessionsPath/$sessionCode').set(session.toJson());
 
     return session;
   }
@@ -51,7 +69,10 @@ class GameSessionService {
     required String sessionCode,
     required String playerName,
   }) async {
-    final sessionRef = _database.ref('$_sessionsPath/$sessionCode');
+    final database = _database;
+    if (database == null) return null;
+
+    final sessionRef = database.ref('$_sessionsPath/$sessionCode');
     final snapshot = await sessionRef.get();
 
     if (!snapshot.exists) {
@@ -78,7 +99,10 @@ class GameSessionService {
 
   // Get a session by code
   Future<GameSession?> getSession(String sessionCode) async {
-    final snapshot = await _database.ref('$_sessionsPath/$sessionCode').get();
+    final database = _database;
+    if (database == null) return null;
+
+    final snapshot = await database.ref('$_sessionsPath/$sessionCode').get();
 
     if (!snapshot.exists) {
       return null;
@@ -94,7 +118,10 @@ class GameSessionService {
     required String playerName,
     required int score,
   }) async {
-    final sessionRef = _database.ref('$_sessionsPath/$sessionCode');
+    final database = _database;
+    if (database == null) return;
+
+    final sessionRef = database.ref('$_sessionsPath/$sessionCode');
 
     await sessionRef.child('scores/$playerName').set(score);
 
@@ -114,7 +141,10 @@ class GameSessionService {
     required String playerName,
     int increment = 1,
   }) async {
-    final sessionRef = _database.ref('$_sessionsPath/$sessionCode');
+    final database = _database;
+    if (database == null) return;
+
+    final sessionRef = database.ref('$_sessionsPath/$sessionCode');
     final scoreRef = sessionRef.child('scores/$playerName');
 
     final snapshot = await scoreRef.get();
@@ -132,13 +162,19 @@ class GameSessionService {
     required String sessionCode,
     required Map<String, dynamic> data,
   }) async {
-    final sessionRef = _database.ref('$_sessionsPath/$sessionCode/gameData');
+    final database = _database;
+    if (database == null) return;
+
+    final sessionRef = database.ref('$_sessionsPath/$sessionCode/gameData');
     await sessionRef.update(data);
   }
 
   // Start a session
   Future<void> startSession(String sessionCode) async {
-    await _database.ref('$_sessionsPath/$sessionCode').update({
+    final database = _database;
+    if (database == null) return;
+
+    await database.ref('$_sessionsPath/$sessionCode').update({
       'status': 'active',
       'startedAt': DateTime.now().millisecondsSinceEpoch,
     });
@@ -146,7 +182,10 @@ class GameSessionService {
 
   // Complete a session
   Future<void> completeSession(String sessionCode) async {
-    await _database.ref('$_sessionsPath/$sessionCode').update({
+    final database = _database;
+    if (database == null) return;
+
+    await database.ref('$_sessionsPath/$sessionCode').update({
       'status': 'completed',
       'completedAt': DateTime.now().millisecondsSinceEpoch,
     });
@@ -154,15 +193,16 @@ class GameSessionService {
 
   // Listen to session changes in real-time
   Stream<GameSession?> watchSession(String sessionCode) {
-    return _database
-        .ref('$_sessionsPath/$sessionCode')
-        .onValue
-        .map((event) {
+    final database = _database;
+    if (database == null) return const Stream.empty();
+
+    return database.ref('$_sessionsPath/$sessionCode').onValue.map((event) {
       if (!event.snapshot.exists) {
         return null;
       }
 
-      final sessionData = Map<String, dynamic>.from(event.snapshot.value as Map);
+      final sessionData =
+          Map<String, dynamic>.from(event.snapshot.value as Map);
       return GameSession.fromJson(sessionData);
     });
   }
@@ -172,7 +212,10 @@ class GameSessionService {
     required String sessionCode,
     required String playerName,
   }) {
-    return _database
+    final database = _database;
+    if (database == null) return const Stream.empty();
+
+    return database
         .ref('$_sessionsPath/$sessionCode/scores/$playerName')
         .onValue
         .map((event) {
@@ -185,12 +228,18 @@ class GameSessionService {
 
   // Delete a session (for cleanup)
   Future<void> deleteSession(String sessionCode) async {
-    await _database.ref('$_sessionsPath/$sessionCode').remove();
+    final database = _database;
+    if (database == null) return;
+
+    await database.ref('$_sessionsPath/$sessionCode').remove();
   }
 
   // Get all active sessions for a game type (optional, for lobby)
   Stream<List<GameSession>> watchActiveSessions(String gameType) {
-    return _database
+    final database = _database;
+    if (database == null) return Stream.value(const []);
+
+    return database
         .ref(_sessionsPath)
         .orderByChild('gameType')
         .equalTo(gameType)
@@ -200,13 +249,15 @@ class GameSessionService {
         return <GameSession>[];
       }
 
-      final sessionsMap = Map<String, dynamic>.from(event.snapshot.value as Map);
+      final sessionsMap =
+          Map<String, dynamic>.from(event.snapshot.value as Map);
       return sessionsMap.entries
           .map((entry) {
             final sessionData = Map<String, dynamic>.from(entry.value as Map);
             return GameSession.fromJson(sessionData);
           })
-          .where((session) => session.status == 'active' || session.status == 'waiting')
+          .where((session) =>
+              session.status == 'active' || session.status == 'waiting')
           .toList();
     });
   }
@@ -216,7 +267,10 @@ class GameSessionService {
     required String sessionCode,
     required String playerName,
   }) async {
-    final sessionRef = _database.ref('$_sessionsPath/$sessionCode');
+    final database = _database;
+    if (database == null) return;
+
+    final sessionRef = database.ref('$_sessionsPath/$sessionCode');
     final snapshot = await sessionRef.get();
 
     if (!snapshot.exists) return;

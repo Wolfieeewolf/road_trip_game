@@ -197,7 +197,8 @@ class _GameScoreBoardState extends State<GameScoreBoard> {
     switch (widget.gameType) {
       case GameType.numberPlateMatch:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.sm, vertical: Spacing.xs),
           decoration: BoxDecoration(
             color: Colors.purple.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
@@ -214,7 +215,8 @@ class _GameScoreBoardState extends State<GameScoreBoard> {
         return _buildSoundSpyInfo(player);
       case GameType.windmill:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.sm, vertical: Spacing.xs),
           decoration: BoxDecoration(
             color: Colors.orange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
@@ -236,7 +238,8 @@ class _GameScoreBoardState extends State<GameScoreBoard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.sm, vertical: Spacing.xs),
           decoration: BoxDecoration(
             color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),

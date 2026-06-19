@@ -26,13 +26,14 @@ class MiniMap extends StatelessWidget {
           options: MapOptions(
             initialCenter: center,
             initialZoom: zoom,
-            interactionOptions: const InteractionOptions(flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag),
+            interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag),
           ),
           children: [
             TileLayer(
               urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
               subdomains: const ['a', 'b', 'c'],
-              userAgentPackageName: 'com.example.roadtrip',
+              userAgentPackageName: 'com.example.roadtripgame',
             ),
             MarkerLayer(markers: markers),
           ],
@@ -41,4 +42,3 @@ class MiniMap extends StatelessWidget {
     );
   }
 }
-

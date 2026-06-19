@@ -21,7 +21,8 @@ class SafetyWarning extends StatefulWidget {
   State<SafetyWarning> createState() => _SafetyWarningState();
 }
 
-class _SafetyWarningState extends State<SafetyWarning> with SingleTickerProviderStateMixin {
+class _SafetyWarningState extends State<SafetyWarning>
+    with SingleTickerProviderStateMixin {
   bool _isDismissed = false;
   bool _hasChecked = false;
   late AnimationController _animationController;
@@ -114,7 +115,10 @@ class _SafetyWarningState extends State<SafetyWarning> with SingleTickerProvider
               Container(
                 padding: const EdgeInsets.all(Spacing.lg),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .error
+                      .withValues(alpha: 0.2),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -125,7 +129,10 @@ class _SafetyWarningState extends State<SafetyWarning> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.all(Spacing.sm),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .error
+                            .withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -191,7 +198,8 @@ class _SafetyWarningState extends State<SafetyWarning> with SingleTickerProvider
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.error,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: Spacing.md),
                         ),
                         child: const Text(
                           'I Understand and Agree',
@@ -254,5 +262,3 @@ SafetyWarning(
   storageKey: 'sound_spy_warning_dismissed',
 )
 */
-
-

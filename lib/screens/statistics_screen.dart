@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../styles/app_theme.dart';
 import '../styles/game_colors.dart';
 import '../styles/spacing.dart';
+import '../widgets/game_shell.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -43,6 +45,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
     // Simulate loading statistics from storage
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
 
     // Sample data - in real app, load from SharedPreferences or database
     setState(() {
@@ -83,66 +86,63 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final stats = _gameStats[gameId];
     if (stats == null) return const SizedBox.shrink();
 
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return GamePanel(
+      accent: GameColors.primaryColors[gameId],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StatRow(
+            label: 'Games Played',
+            value: stats['gamesPlayed']?.toString() ?? '0',
+            icon: Icons.gamepad,
+          ),
+          const Divider(),
+          if (gameId == 'numberPlateMatch') ...[
             _StatRow(
-              label: 'Games Played',
-              value: stats['gamesPlayed']?.toString() ?? '0',
-              icon: Icons.gamepad,
-            ),
-            const Divider(),
-            if (gameId == 'numberPlateMatch') ...[
-              _StatRow(
-                label: 'Total Matches',
-                value: stats['totalMatches']?.toString() ?? '0',
-                icon: Icons.check_circle,
-              ),
-              _StatRow(
-                label: 'Lucky Number',
-                value: stats['luckyNumber']?.toString() ?? 'N/A',
-                icon: Icons.filter_7,
-              ),
-            ] else if (gameId == 'soundSpy') ...[
-              _StatRow(
-                label: 'Total Spots',
-                value: stats['totalSpots']?.toString() ?? '0',
-                icon: Icons.visibility,
-              ),
-              _StatRow(
-                label: 'Correct Guesses',
-                value: stats['correctGuesses']?.toString() ?? '0',
-                icon: Icons.psychology,
-              ),
-            ] else if (gameId == 'windmill') ...[
-              _StatRow(
-                label: 'Total Windmills',
-                value: stats['totalWindmills']?.toString() ?? '0',
-                icon: Icons.wind_power,
-              ),
-              _StatRow(
-                label: 'Average per Game',
-                value: stats['averagePerGame']?.toString() ?? '0',
-                icon: Icons.analytics,
-              ),
-            ],
-            const Divider(),
-            _StatRow(
-              label: 'Best Game',
-              value: stats['bestGame']?.toString() ?? '0',
-              icon: Icons.emoji_events,
+              label: 'Total Matches',
+              value: stats['totalMatches']?.toString() ?? '0',
+              icon: Icons.check_circle,
             ),
             _StatRow(
-              label: 'Top Player',
-              value: stats['topPlayer']?.toString() ?? 'N/A',
-              icon: Icons.person,
+              label: 'Lucky Number',
+              value: stats['luckyNumber']?.toString() ?? 'N/A',
+              icon: Icons.filter_7,
+            ),
+          ] else if (gameId == 'soundSpy') ...[
+            _StatRow(
+              label: 'Total Spots',
+              value: stats['totalSpots']?.toString() ?? '0',
+              icon: Icons.visibility,
+            ),
+            _StatRow(
+              label: 'Correct Guesses',
+              value: stats['correctGuesses']?.toString() ?? '0',
+              icon: Icons.psychology,
+            ),
+          ] else if (gameId == 'windmill') ...[
+            _StatRow(
+              label: 'Total Windmills',
+              value: stats['totalWindmills']?.toString() ?? '0',
+              icon: Icons.wind_power,
+            ),
+            _StatRow(
+              label: 'Average per Game',
+              value: stats['averagePerGame']?.toString() ?? '0',
+              icon: Icons.analytics,
             ),
           ],
-        ),
+          const Divider(),
+          _StatRow(
+            label: 'Best Game',
+            value: stats['bestGame']?.toString() ?? '0',
+            icon: Icons.emoji_events,
+          ),
+          _StatRow(
+            label: 'Top Player',
+            value: stats['topPlayer']?.toString() ?? 'N/A',
+            icon: Icons.person,
+          ),
+        ],
       ),
     );
   }
@@ -162,30 +162,30 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         const SizedBox(height: Spacing.lg),
 
         // Game type breakdown
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Games Breakdown',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: Spacing.lg),
-                _buildGameBreakdown(
-                    'Number Match',
-                    _gameStats['numberPlateMatch']?['gamesPlayed'] ?? 0,
-                    GameColors.primaryColors['numberPlateMatch']!),
-                _buildGameBreakdown('Sound Spy',
-                    _gameStats['soundSpy']?['gamesPlayed'] ?? 0, GameColors.primaryColors['soundSpy']!),
-                _buildGameBreakdown('Windmill Count',
-                    _gameStats['windmill']?['gamesPlayed'] ?? 0, GameColors.primaryColors['windmill']!),
-              ],
-            ),
+        GamePanel(
+          accent: AppTheme.seed,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const GameSectionTitle(
+                icon: Icons.pie_chart_rounded,
+                title: 'Games breakdown',
+                color: AppTheme.seed,
+              ),
+              const SizedBox(height: Spacing.lg),
+              _buildGameBreakdown(
+                  'Number Match',
+                  _gameStats['numberPlateMatch']?['gamesPlayed'] ?? 0,
+                  GameColors.primaryColors['numberPlateMatch']!),
+              _buildGameBreakdown(
+                  'Sound Spy',
+                  _gameStats['soundSpy']?['gamesPlayed'] ?? 0,
+                  GameColors.primaryColors['soundSpy']!),
+              _buildGameBreakdown(
+                  'Windmill Count',
+                  _gameStats['windmill']?['gamesPlayed'] ?? 0,
+                  GameColors.primaryColors['windmill']!),
+            ],
           ),
         ),
       ],
@@ -210,10 +210,19 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           ],
         ),
         const SizedBox(height: Spacing.sm),
-        LinearProgressIndicator(
-          value: gamesPlayed / 50, // Max value for visualization
-          backgroundColor: color.withValues(alpha: 0.2),
-          valueColor: AlwaysStoppedAnimation<Color>(color),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOutCubic,
+            tween: Tween(end: gamesPlayed / 50), // Max value for visualization
+            builder: (context, value, _) => LinearProgressIndicator(
+              value: value,
+              minHeight: 8,
+              backgroundColor: color.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
         ),
         const SizedBox(height: Spacing.lg),
       ],
@@ -226,21 +235,41 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     required IconData icon,
     required Color color,
   }) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.2),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title),
-        trailing: Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
+    return GamePanel(
+      accent: color,
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.sm2,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color),
           ),
-        ),
+          const SizedBox(width: Spacing.md),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

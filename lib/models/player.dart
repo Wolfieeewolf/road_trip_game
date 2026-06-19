@@ -18,9 +18,8 @@ class Player {
     this.preferences = const {},
     DateTime? createdAt,
     DateTime? lastPlayedAt,
-  }) : 
-    createdAt = createdAt ?? DateTime.now(),
-    lastPlayedAt = lastPlayedAt ?? DateTime.now();
+  })  : createdAt = createdAt ?? DateTime.now(),
+        lastPlayedAt = lastPlayedAt ?? DateTime.now();
 
   // Create a new player
   factory Player.create({
@@ -77,24 +76,24 @@ class Player {
 
   // Get total score across all games
   int get totalScore {
-    return gameStats.values.fold(0, 
-      (sum, stats) => sum + (stats.totalScore ?? 0));
+    return gameStats.values
+        .fold(0, (sum, stats) => sum + (stats.totalScore ?? 0));
   }
 
   // Get total games played
   int get totalGamesPlayed {
-    return gameStats.values.fold(0, 
-      (sum, stats) => sum + (stats.gamesPlayed ?? 0));
+    return gameStats.values
+        .fold(0, (sum, stats) => sum + (stats.gamesPlayed ?? 0));
   }
 
   // Get favorite game based on play count
   String? get favoriteGame {
     if (gameStats.isEmpty) return null;
-    
+
     return gameStats.entries
-      .reduce((a, b) => 
-        (a.value.gamesPlayed ?? 0) > (b.value.gamesPlayed ?? 0) ? a : b)
-      .key;
+        .reduce((a, b) =>
+            (a.value.gamesPlayed ?? 0) > (b.value.gamesPlayed ?? 0) ? a : b)
+        .key;
   }
 
   // Serialization
@@ -103,9 +102,7 @@ class Player {
       'id': id,
       'name': name,
       'avatarUrl': avatarUrl,
-      'gameStats': gameStats.map(
-        (key, value) => MapEntry(key, value.toJson())
-      ),
+      'gameStats': gameStats.map((key, value) => MapEntry(key, value.toJson())),
       'preferences': preferences,
       'createdAt': createdAt.toIso8601String(),
       'lastPlayedAt': lastPlayedAt.toIso8601String(),
@@ -120,7 +117,7 @@ class Player {
       avatarUrl: json['avatarUrl'] as String?,
       gameStats: (json['gameStats'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(
-          key, 
+          key,
           GameStats.fromJson(value as Map<String, dynamic>),
         ),
       ),
@@ -216,7 +213,7 @@ class GameStats {
       totalScore: json['totalScore'] as int?,
       gamesPlayed: json['gamesPlayed'] as int?,
       highScore: json['highScore'] as int?,
-      bestGame: json['bestGame'] != null 
+      bestGame: json['bestGame'] != null
           ? DateTime.parse(json['bestGame'] as String)
           : null,
       gameSpecificStats: json['gameSpecificStats'] as Map<String, dynamic>?,
@@ -237,10 +234,10 @@ class NumberPlateStats {
   });
 
   Map<String, dynamic> toJson() => {
-    'uniquePlates': uniquePlates,
-    'specialPlates': specialPlates,
-    'recentPlates': recentPlates,
-  };
+        'uniquePlates': uniquePlates,
+        'specialPlates': specialPlates,
+        'recentPlates': recentPlates,
+      };
 
   factory NumberPlateStats.fromJson(Map<String, dynamic> json) {
     return NumberPlateStats(
@@ -263,10 +260,10 @@ class SoundSpyStats {
   });
 
   Map<String, dynamic> toJson() => {
-    'correctGuesses': correctGuesses,
-    'totalSpots': totalSpots,
-    'soundUsage': soundUsage,
-  };
+        'correctGuesses': correctGuesses,
+        'totalSpots': totalSpots,
+        'soundUsage': soundUsage,
+      };
 
   factory SoundSpyStats.fromJson(Map<String, dynamic> json) {
     return SoundSpyStats(
@@ -289,10 +286,10 @@ class WindmillStats {
   });
 
   Map<String, dynamic> toJson() => {
-    'totalWindmills': totalWindmills,
-    'longestStreak': longestStreak,
-    'averagePerGame': averagePerGame,
-  };
+        'totalWindmills': totalWindmills,
+        'longestStreak': longestStreak,
+        'averagePerGame': averagePerGame,
+      };
 
   factory WindmillStats.fromJson(Map<String, dynamic> json) {
     return WindmillStats(
@@ -329,5 +326,3 @@ final jsonData = updatedPlayer.toJson();
 // Later, restore player data
 final restoredPlayer = Player.fromJson(jsonData);
 */
-
-

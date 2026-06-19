@@ -163,8 +163,10 @@ class _FriendEditorDialogState extends State<_FriendEditorDialog> {
         ),
       ],
       actionsAlignment: MainAxisAlignment.end,
-      contentPadding: const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg2, Spacing.xl, 0),
-      actionsPadding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.md),
+      contentPadding:
+          const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg2, Spacing.xl, 0),
+      actionsPadding: const EdgeInsets.symmetric(
+          horizontal: Spacing.lg, vertical: Spacing.md),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       backgroundColor:
           theme.dialogTheme.backgroundColor ?? theme.colorScheme.surface,

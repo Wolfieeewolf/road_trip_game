@@ -156,8 +156,8 @@ class CarPlayManager {
         text: entry.displayName,
         detailText: details.join(', '),
         accessoryType: entry.isHost
-            ? CPListItemAccessoryTypes.cloud
-            : CPListItemAccessoryTypes.none,
+            ? CPListItemAccessoryType.cloud
+            : CPListItemAccessoryType.none,
         onPress: (complete, _) => complete(),
       );
     }).toList();
@@ -179,6 +179,3 @@ class CarPlayManager {
     ];
   }
 }
-
-
-

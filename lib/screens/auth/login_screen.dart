@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../services/auth/auth_controller.dart';
 import '../../services/link/link_controller.dart';
+import '../../styles/app_theme.dart';
 import '../../styles/spacing.dart';
+import '../../widgets/app_background.dart';
+import '../../widgets/modern_panel.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,9 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
       await auth.login(_nameController.text);
       await link.initialize();
     } catch (error) {
-      setState(() {
-        _errorMessage = error.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = error.toString();
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -59,88 +64,109 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: Spacing.xxl),
-              Text(
-                'Welcome to Road Trip Games',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: Spacing.md),
-              Text(
-                'Set a display name so your friends can find you.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: Spacing.xxl),
-              Form(
-                key: _formKey,
-                child: TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Display name',
-                    border: OutlineInputBorder(),
-                    hintText: 'e.g. RoadTripChamp',
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    final trimmed = value?.trim() ?? '';
-                    if (trimmed.isEmpty) {
-                      return 'Please enter a display name';
-                    }
-                    if (trimmed.length < 3) {
-                      return 'Display name must be at least 3 characters';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(height: Spacing.lg),
-              if (_errorMessage != null)
+      body: AppBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: Spacing.xl),
                 Container(
-                  padding: const EdgeInsets.all(Spacing.md),
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: AppTheme.warmGradient,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.seed.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: theme.colorScheme.error,
+                  child: const Icon(
+                    Icons.directions_car_filled_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: Spacing.xl),
+                Text(
+                  'Road Trip\nGames',
+                  style: theme.textTheme.headlineLarge,
+                ),
+                const SizedBox(height: Spacing.md),
+                Text(
+                  'Pick a display name so friends can spot you in linked games.',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.inkMuted,
+                  ),
+                ),
+                const SizedBox(height: Spacing.xxl),
+                ModernPanel(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Your traveler name',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: Spacing.lg),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Display name',
+                            hintText: 'e.g. RoadTripChamp',
+                            prefixIcon: Icon(Icons.person_outline_rounded),
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                          validator: (value) {
+                            final trimmed = value?.trim() ?? '';
+                            if (trimmed.isEmpty) {
+                              return 'Please enter a display name';
+                            }
+                            if (trimmed.length < 3) {
+                              return 'Display name must be at least 3 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: Spacing.lg),
+                          Container(
+                            padding: const EdgeInsets.all(Spacing.md),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.errorContainer
+                                  .withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(
+                                color: theme.colorScheme.error,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _handleSubmit,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
+                const Spacer(),
+                GradientPrimaryButton(
+                  onPressed: _isSubmitting ? null : _handleSubmit,
+                  label: 'Get started',
+                  icon: Icons.arrow_forward_rounded,
+                  isLoading: _isSubmitting,
                 ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: Spacing.md),
-            ],
+                const SizedBox(height: Spacing.md),
+              ],
+            ),
           ),
         ),
       ),

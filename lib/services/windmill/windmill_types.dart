@@ -60,4 +60,3 @@ const Map<String, WindmillTypeDefinition> windmillTypeDefinitions = {
     description: 'Anything unusual: sculpture, historic feature, etc.',
   ),
 };
-

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../styles/spacing.dart';
+import '../widgets/game_fx.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -33,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       _soundEnabled = prefs.getBool('soundEnabled') ?? true;
       _vibrationEnabled = prefs.getBool('vibrationEnabled') ?? true;
@@ -68,7 +70,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(Spacing.xl, 0, Spacing.xl, Spacing.xxl),
+              padding: const EdgeInsets.fromLTRB(
+                  Spacing.xl, 0, Spacing.xl, Spacing.xxl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -97,6 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: _vibrationEnabled,
                         onChanged: (value) {
                           setState(() => _vibrationEnabled = value);
+                          GameFx.hapticsEnabled = value;
                           _saveSetting('vibrationEnabled', value);
                         },
                       ),
@@ -210,7 +214,8 @@ class _SettingSwitchTile extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.md2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.lg, vertical: Spacing.md2),
         child: Row(
           children: [
             Container(

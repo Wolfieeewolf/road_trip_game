@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
+import '../../widgets/game_fx.dart';
+import '../../widgets/game_shell.dart';
 
 class NumberPlateMatchScreen extends StatefulWidget {
   final List<String> players;
@@ -47,12 +49,7 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
     super.dispose();
   }
 
-  void _addScore(String player) {
-    setState(() {
-      _scores[player] = (_scores[player] ?? 0) + 1;
-    });
-  }
-
+  /// Recomputes the most common digit. Must be called inside setState.
   void _updateMostCommonNumber() {
     if (_numberCounts.isEmpty) return;
 
@@ -66,10 +63,8 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
       }
     });
 
-    setState(() {
-      _mostCommonNumber = maxNumber;
-      _mostCommonCount = maxCount;
-    });
+    _mostCommonNumber = maxNumber;
+    _mostCommonCount = maxCount;
   }
 
   void _addPlate(String plate) {
@@ -80,11 +75,11 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
         .where((player) => widget.playerNumbers[player] == lastDigit)
         .toList();
 
-    // Update number counts
-    _numberCounts[lastDigit] = (_numberCounts[lastDigit] ?? 0) + 1;
-    _updateMostCommonNumber();
-
     setState(() {
+      // Update number counts
+      _numberCounts[lastDigit] = (_numberCounts[lastDigit] ?? 0) + 1;
+      _updateMostCommonNumber();
+
       _plateHistory.insert(
           0,
           _PlateEntry(
@@ -100,136 +95,113 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
 
       // Add scores for matching players
       for (var player in matchingPlayers) {
-        _addScore(player);
+        _scores[player] = (_scores[player] ?? 0) + 1;
       }
     });
+
+    final gameColor = GameColors.primaryColors['numberPlateMatch']!;
+    for (final player in matchingPlayers) {
+      GameFx.scoreFloat(context, text: '+1 $player', color: gameColor);
+      final score = _scores[player] ?? 0;
+      if (score > 0 && score % 10 == 0) {
+        GameFx.celebrate(
+          context,
+          message: '$player hits $score!',
+          color: gameColor,
+        );
+      }
+    }
 
     _plateController.clear();
   }
 
-  Widget _buildPlayerCard(String player) {
-    final selectedNumber = widget.playerNumbers[player] ?? 'Not set';
+  Widget _buildPlayerCard(String player, {int? rank, bool isLeader = false}) {
+    final gameColor = GameColors.primaryColors['numberPlateMatch']!;
+    final selectedNumber = widget.playerNumbers[player] ?? '?';
 
-    return Container(
-      height: 90,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+    return GamePlayerTile(
+      name: player,
+      score: _scores[player] ?? 0,
+      color: gameColor,
+      rank: rank,
+      isLeader: isLeader,
+      subtitle: 'Watching for plates ending in $selectedNumber',
+      avatar: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [gameColor, Color.lerp(gameColor, Colors.black, 0.2)!],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.md),
-        child: Row(
-          children: [
-            // Avatar and player name
-            Expanded(
-              flex: 2,
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.1),
-                    child: Text(
-                      selectedNumber,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: GameColors.primaryColors['numberPlateMatch']!,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: Spacing.md),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          player,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: Spacing.xs),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: Spacing.md, vertical: Spacing.xs),
-                          decoration: BoxDecoration(
-                            color: GameColors.primaryColors['numberPlateMatch']!,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            'Score: ${_scores[player] ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: gameColor.withValues(alpha: 0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: Center(
+          child: Text(
+            selectedNumber,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildNumberPad() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(Spacing.lg),
+    final gameColor = GameColors.primaryColors['numberPlateMatch']!;
+
+    return GamePanel(
+      accent: gameColor,
       margin: const EdgeInsets.only(bottom: Spacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(Icons.directions_car, color: GameColors.primaryColors['numberPlateMatch']!),
-              const SizedBox(width: Spacing.sm),
-              const Text(
-                'Enter License Plate:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: GameSectionTitle(
+                  icon: Icons.directions_car_rounded,
+                  title: 'Enter a plate',
+                  color: gameColor,
                 ),
               ),
-              const Spacer(),
+              // Styled like a real number plate.
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  border: Border.all(color: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.3)),
+                  color: const Color(0xFF1F2937),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF374151), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
+                constraints: const BoxConstraints(minWidth: 90),
                 child: Text(
-                  _plateController.text,
+                  _plateController.text.isEmpty
+                      ? '· · ·'
+                      : _plateController.text,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 3,
+                    color: Color(0xFFFBBF24),
                   ),
                 ),
               ),
@@ -305,34 +277,29 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
 
   Widget _buildKeypadButton(String text,
       {bool isSpecial = false, VoidCallback? onPressed}) {
-    return InkWell(
+    final gameColor = GameColors.primaryColors['numberPlateMatch']!;
+
+    return ChunkyButton(
+      color: isSpecial ? gameColor : Colors.white,
+      depth: 4,
+      borderRadius: 14,
+      padding: EdgeInsets.zero,
       onTap: onPressed ??
           () {
             setState(() {
               _plateController.text += text;
             });
           },
-      child: Container(
-        width: 65,
-        height: 65,
-        decoration: BoxDecoration(
-          color: isSpecial ? GameColors.primaryColors['numberPlateMatch']! : GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 2,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      child: SizedBox(
+        width: 64,
+        height: 58,
         child: Center(
           child: Text(
             text,
             style: TextStyle(
               fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: isSpecial ? Colors.white : GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w800,
+              color: isSpecial ? Colors.white : gameColor,
             ),
           ),
         ),
@@ -341,29 +308,16 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
   }
 
   Widget _buildNumberStats() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(Spacing.lg),
+    return GamePanel(
+      accent: GameColors.primaryColors['numberPlateMatch'],
       margin: const EdgeInsets.only(bottom: Spacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Number Stats:',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          GameSectionTitle(
+            icon: Icons.bar_chart_rounded,
+            title: 'Number stats',
+            color: GameColors.primaryColors['numberPlateMatch']!,
           ),
           const SizedBox(height: Spacing.lg),
 
@@ -402,7 +356,8 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
                     Text(
                       'Seen $_mostCommonCount times',
                       style: TextStyle(
-                        color: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.85),
+                        color: GameColors.primaryColors['numberPlateMatch']!
+                            .withValues(alpha: 0.85),
                       ),
                     ),
                   ],
@@ -441,7 +396,8 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
                   color: isHighest
                       ? GameColors.primaryColors['numberPlateMatch']!
                       : count > 0
-                          ? GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.1)
+                          ? GameColors.primaryColors['numberPlateMatch']!
+                              .withValues(alpha: 0.1)
                           : Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -456,7 +412,8 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
                         color: isHighest
                             ? Colors.white
                             : count > 0
-                                ? GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.9)
+                                ? GameColors.primaryColors['numberPlateMatch']!
+                                    .withValues(alpha: 0.9)
                                 : Colors.grey.shade600,
                       ),
                     ),
@@ -467,7 +424,8 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
                         color: isHighest
                             ? Colors.white
                             : count > 0
-                                ? GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.9)
+                                ? GameColors.primaryColors['numberPlateMatch']!
+                                    .withValues(alpha: 0.9)
                                 : Colors.grey.shade600,
                       ),
                     ),
@@ -483,18 +441,8 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
 
   Widget _buildPlateHistory() {
     if (_plateHistory.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+      return GamePanel(
+        accent: GameColors.primaryColors['numberPlateMatch'],
         padding: const EdgeInsets.all(Spacing.lg2),
         child: const Center(
           child: Text(
@@ -509,18 +457,9 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return GamePanel(
+      accent: GameColors.primaryColors['numberPlateMatch'],
+      padding: EdgeInsets.zero,
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -530,11 +469,13 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
           final entry = _plateHistory[index];
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.1),
+              backgroundColor: GameColors.primaryColors['numberPlateMatch']!
+                  .withValues(alpha: 0.1),
               child: Text(
                 entry.plate.characters.last,
                 style: TextStyle(
-                  color: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.9),
+                  color: GameColors.primaryColors['numberPlateMatch']!
+                      .withValues(alpha: 0.9),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -564,122 +505,68 @@ class _NumberPlateMatchScreenState extends State<NumberPlateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Number Plate Match'),
-        backgroundColor: GameColors.primaryColors['numberPlateMatch']!,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              setState(() {
-                _showRules = !_showRules;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.05),
-              Colors.white,
+    final gameColor = GameColors.primaryColors['numberPlateMatch']!;
+
+    // Rank players by score for medals; display order stays the same.
+    final sortedScores = _scores.values.toList()
+      ..sort((a, b) => b.compareTo(a));
+    final topScore = sortedScores.isEmpty ? 0 : sortedScores.first;
+    int rankFor(String player) =>
+        sortedScores.indexOf(_scores[player] ?? 0) + 1;
+
+    return GameShell(
+      title: 'Number Plate Match',
+      subtitle: 'Last digit wins the point!',
+      color: gameColor,
+      icon: Icons.pin_rounded,
+      onHelp: () => setState(() => _showRules = !_showRules),
+      body: ListView(
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          GameRulesCard(
+            visible: _showRules,
+            color: gameColor,
+            rules: const [
+              'Each player has picked a number (0-9)',
+              'Enter license plates you see on the road',
+              'If the last digit matches your number, you score a point!',
+              'Multiple players can match the same plate',
             ],
           ),
-        ),
-        child: Column(
-          children: [
-            if (_showRules)
-              Container(
-                margin: const EdgeInsets.all(Spacing.lg),
-                padding: const EdgeInsets.all(Spacing.lg),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: GameColors.primaryColors['numberPlateMatch']!),
-                        SizedBox(width: 8),
-                        Text(
-                          'How to Play:',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: GameColors.primaryColors['numberPlateMatch']!,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Spacing.md),
-                    _RuleItem(text: 'Each player has picked a number (0-9)'),
-                    _RuleItem(text: 'Enter license plates you see on the road'),
-                    _RuleItem(
-                        text:
-                            'If the last digit matches your number, you score a point!'),
-                    _RuleItem(
-                        text: 'Multiple players can match the same plate'),
-                  ],
+          FadeSlideIn(child: _buildNumberPad()),
+          FadeSlideIn(
+            delay: const Duration(milliseconds: 80),
+            child: _buildNumberStats(),
+          ),
+
+          // Player score cards in a list
+          ...widget.players.toList().asMap().entries.map((entry) {
+            final player = entry.value;
+            final score = _scores[player] ?? 0;
+            return FadeSlideIn(
+              delay: Duration(milliseconds: 80 * (entry.key + 2)),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.md),
+                child: _buildPlayerCard(
+                  player,
+                  rank: rankFor(player),
+                  isLeader: topScore > 0 && score == topScore,
                 ),
               ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(Spacing.lg),
-                children: [
-                  _buildNumberPad(),
-                  _buildNumberStats(),
+            );
+          }),
 
-                  // Player score cards in a list
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: widget.players.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: Spacing.md),
-                        child: _buildPlayerCard(widget.players[index]),
-                      );
-                    },
-                  ),
+          const SizedBox(height: Spacing.lg),
 
-                  const SizedBox(height: 24),
-
-                  // Plate history
-                  Row(
-                    children: [
-                      Icon(Icons.history, color: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.85)),
-                      const SizedBox(width: Spacing.sm),
-                      Text(
-                        'Recent Plates:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.85),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  _buildPlateHistory(),
-                ],
-              ),
-            ),
-          ],
-        ),
+          // Plate history
+          GameSectionTitle(
+            icon: Icons.history_rounded,
+            title: 'Recent plates',
+            color: gameColor,
+          ),
+          const SizedBox(height: Spacing.md),
+          _buildPlateHistory(),
+        ],
       ),
     );
   }
@@ -695,30 +582,4 @@ class _PlateEntry {
     required this.matchingPlayers,
     required this.timestamp,
   });
-}
-
-class _RuleItem extends StatelessWidget {
-  final String text;
-
-  const _RuleItem({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.check_circle, size: 16, color: GameColors.primaryColors['numberPlateMatch']!.withValues(alpha: 0.3)),
-          const SizedBox(width: Spacing.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

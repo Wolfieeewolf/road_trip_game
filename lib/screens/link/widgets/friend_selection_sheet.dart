@@ -81,7 +81,8 @@ class _FriendSelectionSheetState extends State<_FriendSelectionSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.sm),
+              padding: const EdgeInsets.fromLTRB(
+                  Spacing.lg, Spacing.md, Spacing.lg, Spacing.sm),
               child: TextField(
                 decoration: const InputDecoration(
                   hintText: 'Search friends',

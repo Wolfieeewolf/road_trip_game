@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
+import '../../widgets/game_fx.dart';
+import '../../widgets/game_shell.dart';
 
 class ColorChaseScreen extends StatefulWidget {
   final List<String> players;
@@ -57,22 +59,16 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
     }
   }
 
-  void _addScore(String player) {
-    setState(() {
-      _scores[player] = (_scores[player] ?? 0) + 1;
-    });
-  }
-
   void _spotColor(String colorName) {
-    // Update the color counts
-    _colorCounts[colorName] = (_colorCounts[colorName] ?? 0) + 1;
-
     // Find players who have this color
     final matchingPlayers = widget.players
         .where((player) => widget.playerColors[player] == colorName)
         .toList();
 
     setState(() {
+      // Update the color counts
+      _colorCounts[colorName] = (_colorCounts[colorName] ?? 0) + 1;
+
       // Add to history
       _spotHistory.insert(
           0,
@@ -89,9 +85,22 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
 
       // Add scores for matching players
       for (var player in matchingPlayers) {
-        _addScore(player);
+        _scores[player] = (_scores[player] ?? 0) + 1;
       }
     });
+
+    final gameColor = GameColors.primaryColors['colorChase']!;
+    for (final player in matchingPlayers) {
+      GameFx.scoreFloat(context, text: '+1 $player', color: gameColor);
+      final score = _scores[player] ?? 0;
+      if (score > 0 && score % 10 == 0) {
+        GameFx.celebrate(
+          context,
+          message: '$player hits $score!',
+          color: gameColor,
+        );
+      }
+    }
   }
 
   void _addCustomColor() {
@@ -111,126 +120,49 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
     _customColorName = "";
   }
 
-  Widget _buildPlayerCard(String player) {
+  Widget _buildPlayerCard(String player, {int? rank, bool isLeader = false}) {
     final selectedColor = widget.playerColors[player] ?? 'Not set';
     final displayColor = _colorMap[selectedColor] ?? Colors.grey;
 
-    return Container(
-      height: 90,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.md),
-        child: Row(
-          children: [
-            // Color circle and player name
-            Expanded(
-              flex: 2,
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: displayColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: Spacing.md),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          player,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: Spacing.xs),
-                        Text(
-                          selectedColor,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Score display
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: GameColors.primaryColors['colorChase']!,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${_scores[player] ?? 0}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+    return GamePlayerTile(
+      name: player,
+      score: _scores[player] ?? 0,
+      color: GameColors.primaryColors['colorChase']!,
+      rank: rank,
+      isLeader: isLeader,
+      subtitle: 'Chasing $selectedColor cars',
+      avatar: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: displayColor,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade300, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: displayColor.withValues(alpha: 0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
+        child: const Icon(Icons.directions_car_rounded,
+            color: Colors.black38, size: 22),
       ),
     );
   }
 
   Widget _buildColorButtons() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(Spacing.lg),
+    return GamePanel(
+      accent: GameColors.primaryColors['colorChase'],
       margin: const EdgeInsets.only(bottom: Spacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.directions_car, color: GameColors.primaryColors['colorChase']),
-              SizedBox(width: Spacing.sm),
-              Text(
-                'Tap When You Spot a Car:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          GameSectionTitle(
+            icon: Icons.directions_car_rounded,
+            title: 'Tap when you spot a car',
+            color: GameColors.primaryColors['colorChase']!,
           ),
           const SizedBox(height: Spacing.lg),
 
@@ -244,27 +176,29 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
               final count = _colorCounts[colorName] ?? 0;
               final isLightColor = _isLightColor(color);
 
-              return InkWell(
+              return BouncyTap(
+                pressedScale: 0.85,
                 onTap: () => _spotColor(colorName),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    // Car icon with color background
+                    // Car icon with color background and a chunky 3D edge
                     Container(
-                      width: 70,
-                      height: 70,
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(10),
-                          border: isLightColor
-                              ? Border.all(color: Colors.grey.shade300)
-                              : null,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 2,
-                              offset: const Offset(0, 2),
-                            )
-                          ]),
+                        color: color,
+                        borderRadius: BorderRadius.circular(14),
+                        border: isLightColor
+                            ? Border.all(color: Colors.grey.shade300)
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color.lerp(color, Colors.black, 0.35)!,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: Center(
                         child: Icon(
                           Icons.directions_car,
@@ -272,22 +206,22 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
                           color: color == Colors.black
                               ? Colors.white
                               : Colors.black54,
-                          size: 35,
+                          size: 32,
                         ),
                       ),
                     ),
 
-                    // Color name and count
+                    // Color name strip
                     Positioned(
                       bottom: 0,
                       left: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
+                          color: Colors.black.withValues(alpha: 0.55),
                           borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(10),
+                            bottom: Radius.circular(14),
                           ),
                         ),
                         child: Center(
@@ -303,31 +237,31 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
                       ),
                     ),
 
-                    // Count display below car
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        decoration: BoxDecoration(
-                          color: GameColors.primaryColors['colorChase']!.withValues(alpha: 0.8),
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(10),
+                    // Spot count badge
+                    if (count > 0)
+                      Positioned(
+                        top: -6,
+                        right: -6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
                           ),
-                        ),
-                        child: Center(
+                          decoration: BoxDecoration(
+                            color: GameColors.primaryColors['colorChase']!,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
                           child: Text(
-                            count > 0 ? count.toString() : '0',
+                            count.toString(),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               );
@@ -347,7 +281,8 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
               ),
               hintText: 'e.g., Turquoise, Maroon, etc.',
               suffixIcon: IconButton(
-                icon: Icon(Icons.add_circle, color: GameColors.primaryColors['colorChase']),
+                icon: Icon(Icons.add_circle,
+                    color: GameColors.primaryColors['colorChase']),
                 onPressed: _addCustomColor,
               ),
             ),
@@ -376,18 +311,8 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
 
   Widget _buildSpotHistory() {
     if (_spotHistory.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+      return GamePanel(
+        accent: GameColors.primaryColors['colorChase'],
         padding: const EdgeInsets.all(Spacing.lg2),
         child: const Center(
           child: Text(
@@ -402,18 +327,9 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return GamePanel(
+      accent: GameColors.primaryColors['colorChase'],
+      padding: EdgeInsets.zero,
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -461,129 +377,65 @@ class _ColorChaseScreenState extends State<ColorChaseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Colour Chase'),
-        backgroundColor: GameColors.primaryColors['colorChase'],
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              setState(() {
-                _showRules = !_showRules;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              GameColors.primaryColors['colorChase']!.withValues(alpha: 0.1),
-              Colors.white,
+    final gameColor = GameColors.primaryColors['colorChase']!;
+
+    // Rank players by score for medals; display order stays the same.
+    final sortedScores = _scores.values.toList()
+      ..sort((a, b) => b.compareTo(a));
+    final topScore = sortedScores.isEmpty ? 0 : sortedScores.first;
+    int rankFor(String player) =>
+        sortedScores.indexOf(_scores[player] ?? 0) + 1;
+
+    return GameShell(
+      title: 'Colour Chase',
+      subtitle: 'Spot your colour, score a point!',
+      color: gameColor,
+      icon: Icons.palette_rounded,
+      onHelp: () => setState(() => _showRules = !_showRules),
+      body: ListView(
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          GameRulesCard(
+            visible: _showRules,
+            color: gameColor,
+            rules: const [
+              'Each player has chosen a car color to spot',
+              'When you see a car of that color, tap the color button',
+              'Players get a point when their color is spotted',
+              'Track which colors are most common on your journey!',
+              'Add custom colors by typing them in the field below',
             ],
           ),
-        ),
-        child: Column(
-          children: [
-            if (_showRules)
-              Container(
-                margin: const EdgeInsets.all(Spacing.lg),
-                padding: const EdgeInsets.all(Spacing.lg),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: GameColors.primaryColors['colorChase']),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'How to Play:',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: GameColors.primaryColors['colorChase']!,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Spacing.md),
-                    _RuleItem(
-                        text: 'Each player has chosen a car color to spot'),
-                    _RuleItem(
-                        text:
-                            'When you see a car of that color, tap the color button'),
-                    _RuleItem(
-                        text:
-                            'Players get a point when their color is spotted'),
-                    _RuleItem(
-                        text:
-                            'Track which colors are most common on your journey!'),
-                    _RuleItem(
-                        text:
-                            'Add custom colors by typing them in the field below'),
-                  ],
+          FadeSlideIn(child: _buildColorButtons()),
+
+          // Player score cards
+          ...widget.players.toList().asMap().entries.map((entry) {
+            final player = entry.value;
+            final score = _scores[player] ?? 0;
+            return FadeSlideIn(
+              delay: Duration(milliseconds: 80 * (entry.key + 1)),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.md),
+                child: _buildPlayerCard(
+                  player,
+                  rank: rankFor(player),
+                  isLeader: topScore > 0 && score == topScore,
                 ),
               ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(Spacing.lg),
-                children: [
-                  _buildColorButtons(),
-                  // Color stats removed and integrated into color buttons
+            );
+          }),
 
-                  // Player score cards
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: widget.players.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: Spacing.md),
-                        child: _buildPlayerCard(widget.players[index]),
-                      );
-                    },
-                  ),
+          const SizedBox(height: Spacing.lg),
 
-                  const SizedBox(height: Spacing.xl),
-
-                  // Spot history
-                  Row(
-                    children: [
-                      Icon(Icons.history, color: GameColors.primaryColors['colorChase']),
-                      const SizedBox(width: Spacing.sm),
-                      Text(
-                        'Recent Spots:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: GameColors.primaryColors['colorChase']!,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  _buildSpotHistory(),
-                ],
-              ),
-            ),
-          ],
-        ),
+          // Spot history
+          GameSectionTitle(
+            icon: Icons.history_rounded,
+            title: 'Recent spots',
+            color: gameColor,
+          ),
+          const SizedBox(height: Spacing.md),
+          _buildSpotHistory(),
+        ],
       ),
     );
   }
@@ -599,30 +451,4 @@ class _ColorSpotEntry {
     required this.matchingPlayers,
     required this.timestamp,
   });
-}
-
-class _RuleItem extends StatelessWidget {
-  final String text;
-
-  const _RuleItem({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.check_circle, size: 16, color: GameColors.primaryColors['colorChase']),
-          const SizedBox(width: Spacing.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

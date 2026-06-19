@@ -209,9 +209,11 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
                               IconButton(
                                 icon: const Icon(Icons.copy),
                                 onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: _createdCode!));
+                                  Clipboard.setData(
+                                      ClipboardData(text: _createdCode!));
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Code copied!')),
+                                    const SnackBar(
+                                        content: Text('Code copied!')),
                                   );
                                 },
                               ),
@@ -226,10 +228,12 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.create),
-                        label: Text(_isCreating ? 'Creating...' : 'Create Game'),
+                        label:
+                            Text(_isCreating ? 'Creating...' : 'Create Game'),
                       ),
                     ],
                   ),
@@ -287,7 +291,8 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
                         textCapitalization: TextCapitalization.characters,
                         maxLength: 6,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9]')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp('[A-Za-z0-9]')),
                         ],
                       ),
                       const SizedBox(height: Spacing.md),
@@ -297,7 +302,8 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.login),
                         label: Text(_isJoining ? 'Joining...' : 'Join Game'),

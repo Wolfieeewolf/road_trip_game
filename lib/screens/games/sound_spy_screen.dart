@@ -1,8 +1,10 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/audio/game_sound_player.dart';
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
+import '../../widgets/game_fx.dart';
+import '../../widgets/game_shell.dart';
 
 class SoundSpyScreen extends StatefulWidget {
   final List<String> players;
@@ -26,7 +28,7 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
   final Map<String, int> _scores = {};
   final Map<String, int> _guessScores = {};
   final List<_SpyEvent> _eventHistory = [];
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final GameSoundPlayer _soundPlayer = GameSoundPlayer();
   bool _showRules = false;
 
   // Sound mapping
@@ -56,7 +58,6 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
   @override
   void initState() {
     super.initState();
-    _audioPlayer.setReleaseMode(ReleaseMode.stop);
     // Initialize scores
     for (var player in widget.players) {
       _scores[player] = 0;
@@ -66,7 +67,7 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    _soundPlayer.dispose();
     super.dispose();
   }
 
@@ -119,16 +120,18 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
       return;
     }
 
-    try {
-      await _audioPlayer.stop();
-      if (customPath != null) {
-        await _audioPlayer.play(DeviceFileSource(customPath));
-      } else {
-        final soundFile = _soundFiles[assetKey] ?? _defaultSoundAsset;
-        await _audioPlayer.play(AssetSource(soundFile));
-      }
-    } catch (e) {
-      _showSnack('Could not play sound: $e');
+    bool played;
+    if (customPath != null) {
+      played = await _soundPlayer.playFile(customPath);
+    } else {
+      final key = assetKey ?? 'Beep';
+      final soundPath = _soundFiles[key] ?? _defaultSoundAsset;
+      final soundName = soundPath.split('/').last.split('.').first;
+      played = await _soundPlayer.playAsset(soundName);
+    }
+
+    if (!played && mounted && _soundPlayer.assetSoundsAvailable) {
+      _showSnack('Could not play sound on this device.');
     }
   }
 
@@ -149,6 +152,20 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
       }
     });
 
+    GameFx.scoreFloat(
+      context,
+      text: '+1 $spotter',
+      color: GameColors.primaryColors['soundSpy']!,
+    );
+    final total = (_scores[spotter] ?? 0) + (_guessScores[spotter] ?? 0);
+    if (total > 0 && total % 10 == 0) {
+      GameFx.celebrate(
+        context,
+        message: '$spotter hits $total!',
+        color: GameColors.primaryColors['soundSpy'],
+      );
+    }
+
     // Play the spotter's sound
     _playSound(widget.playerSounds[spotter]);
   }
@@ -165,6 +182,12 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
             timestamp: DateTime.now(),
           ));
     });
+
+    GameFx.scoreFloat(
+      context,
+      text: 'Nice guess, $guesser!',
+      color: GameColors.primaryColors['soundSpy']!,
+    );
   }
 
   Widget _buildPlayerCard(String player) {
@@ -173,229 +196,283 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
     final object = widget.spyObjects[player] ?? 'Not set';
     final icon = _soundIcons[_assetKeyForSelection(selection)];
 
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: Spacing.sm),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.1),
-              GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.all(Spacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    player,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+    final gameColor = GameColors.primaryColors['soundSpy']!;
+
+    return GamePanel(
+      accent: gameColor,
+      margin: const EdgeInsets.only(bottom: Spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            gameColor,
+                            Color.lerp(gameColor, Colors.black, 0.2)!,
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          player.isEmpty ? '?' : player[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
-                  decoration: BoxDecoration(
-                    color: GameColors.primaryColors['soundSpy']!,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Score: ${(_scores[player] ?? 0) + (_guessScores[player] ?? 0)}',
+                    const SizedBox(width: Spacing.md),
+                    Flexible(
+                      child: Text(
+                        player,
                         style: const TextStyle(
-                          color: Colors.white,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.md, vertical: Spacing.xs),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      gameColor,
+                      Color.lerp(gameColor, Colors.black, 0.2)!,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Score: ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ScorePop(
+                      value:
+                          (_scores[player] ?? 0) + (_guessScores[player] ?? 0),
+                      popColor: Colors.amber,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.md),
+
+          // Sound and object info
+          Container(
+            padding: const EdgeInsets.all(Spacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                  color: GameColors.primaryColors['soundSpy']!
+                      .withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                // Sound info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: GameColors.primaryColors['soundSpy']!
+                                  .withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              icon ?? Icons.music_note,
+                              size: 18,
+                              color: GameColors.primaryColors['soundSpy']!
+                                  .withValues(alpha: 0.85),
+                            ),
+                          ),
+                          const SizedBox(width: Spacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Sound:',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  sound,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: Spacing.sm),
+                      Row(
+                        children: [
+                          Icon(Icons.visibility,
+                              size: 22,
+                              color: GameColors.primaryColors['soundSpy']!),
+                          const SizedBox(width: Spacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Spotting:',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  object,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: Spacing.md),
 
-            // Sound and object info
-            Container(
-              padding: const EdgeInsets.all(Spacing.md),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  // Sound info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                icon ?? Icons.music_note,
-                                size: 18,
-                                color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.85),
-                              ),
-                            ),
-                            const SizedBox(width: Spacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Sound:',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    sound,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: Spacing.sm),
-                        Row(
-                          children: [
-                            Icon(Icons.visibility,
-                                size: 22, color: GameColors.primaryColors['soundSpy']!),
-                            const SizedBox(width: Spacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Spotting:',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    object,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                // Sound button
+                BouncyTap(
+                  pressedScale: 0.85,
+                  onTap: () => _playSound(selection),
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          gameColor,
+                          Color.lerp(gameColor, Colors.black, 0.25)!,
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: gameColor.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                  ),
-
-                  // Sound button
-                  ElevatedButton(
-                    onPressed: () => _playSound(selection),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: GameColors.primaryColors['soundSpy']!,
-                      shape: const CircleBorder(),
-                      padding: const EdgeInsets.all(Spacing.md),
-                    ),
                     child: const Icon(
-                      Icons.volume_up,
+                      Icons.volume_up_rounded,
                       color: Colors.white,
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: Spacing.lg),
-
-            // Scores and actions
-            Row(
-              children: [
-                Expanded(
-                  child: _ScoreDisplay(
-                    label: 'Spots',
-                    score: _scores[player] ?? 0,
-                    onAdd: () => _addSpotting(player),
-                  ),
-                ),
-                const SizedBox(width: Spacing.sm),
-                Expanded(
-                  child: _ScoreDisplay(
-                    label: 'Guesses',
-                    score: _guessScores[player] ?? 0,
-                    onAdd: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => _GuessDialog(
-                          players: widget.players,
-                          guesser: player,
-                          onGuess: _addGuess,
-                        ),
-                      );
-                    },
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: Spacing.lg),
+
+          // Scores and actions
+          Row(
+            children: [
+              Expanded(
+                child: _ScoreDisplay(
+                  label: 'Spots',
+                  score: _scores[player] ?? 0,
+                  onAdd: () => _addSpotting(player),
+                ),
+              ),
+              const SizedBox(width: Spacing.sm),
+              Expanded(
+                child: _ScoreDisplay(
+                  label: 'Guesses',
+                  score: _guessScores[player] ?? 0,
+                  onAdd: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => _GuessDialog(
+                        players: widget.players,
+                        guesser: player,
+                        onGuess: _addGuess,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEventHistory() {
+    final gameColor = GameColors.primaryColors['soundSpy']!;
+
     if (_eventHistory.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Center(
-            child: Text(
-              'No events yet.\nStart spotting and guessing!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
+      return GamePanel(
+        accent: gameColor,
+        padding: const EdgeInsets.all(Spacing.lg2),
+        child: const Center(
+          child: Text(
+            'No events yet.\nStart spotting and guessing!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
             ),
           ),
         ),
       );
     }
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return GamePanel(
+      accent: gameColor,
+      padding: EdgeInsets.zero,
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -436,83 +513,46 @@ class _SoundSpyScreenState extends State<SoundSpyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sound Spy'),
-        backgroundColor: GameColors.primaryColors['soundSpy']!,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              setState(() {
-                _showRules = !_showRules;
-              });
-            },
+    final gameColor = GameColors.primaryColors['soundSpy']!;
+
+    return GameShell(
+      title: 'Sound Spy',
+      subtitle: 'Make your sound, keep them guessing!',
+      color: gameColor,
+      icon: Icons.graphic_eq_rounded,
+      onHelp: () => setState(() => _showRules = !_showRules),
+      body: ListView(
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          GameRulesCard(
+            visible: _showRules,
+            color: gameColor,
+            rules: const [
+              'Each player has chosen a sound and something to spot',
+              'Make your sound when you spot your object',
+              'Try to guess what others are spotting',
+              'Score 1 point for spotting, 1 point for correct guesses',
+            ],
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (_showRules)
-              Container(
-                color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.05),
-                padding: const EdgeInsets.all(Spacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'How to Play:',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: Spacing.sm),
-                    Text(
-                      '1. Each player has chosen a sound and something to spot',
-                      style: TextStyle(color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.95)),
-                    ),
-                    Text(
-                      '2. Make your sound when you spot your object',
-                      style: TextStyle(color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.95)),
-                    ),
-                    Text(
-                      '3. Try to guess what others are spotting',
-                      style: TextStyle(color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.95)),
-                    ),
-                    Text(
-                      '4. Score 1 point for spotting, 1 point for correct guesses',
-                      style: TextStyle(color: GameColors.primaryColors['soundSpy']!.withValues(alpha: 0.95)),
-                    ),
-                  ],
+          // Player cards in a list instead of grid for better spacing
+          ...widget.players.toList().asMap().entries.map(
+                (entry) => FadeSlideIn(
+                  delay: Duration(milliseconds: 80 * entry.key),
+                  child: _buildPlayerCard(entry.value),
                 ),
               ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(Spacing.lg),
-                children: [
-                  // Player cards in a list instead of grid for better spacing
-                  ...widget.players.map((player) => _buildPlayerCard(player)),
 
-                  const SizedBox(height: Spacing.xl),
+          const SizedBox(height: Spacing.lg),
 
-                  // Event history
-                  const Text(
-                    'Game History:',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildEventHistory(),
-                ],
-              ),
-            ),
-          ],
-        ),
+          // Event history
+          GameSectionTitle(
+            icon: Icons.history_rounded,
+            title: 'Game history',
+            color: gameColor,
+          ),
+          const SizedBox(height: Spacing.sm),
+          _buildEventHistory(),
+        ],
       ),
     );
   }
@@ -531,6 +571,8 @@ class _ScoreDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameColor = GameColors.primaryColors['soundSpy']!;
+
     return Column(
       children: [
         Text(
@@ -538,28 +580,35 @@ class _ScoreDisplay extends StatelessWidget {
           style: const TextStyle(
             color: Colors.grey,
             fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          '$score',
+        ScorePop(
+          value: score,
+          popColor: Colors.amber,
           style: TextStyle(
             fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: GameColors.primaryColors['soundSpy']!,
+            fontWeight: FontWeight.w800,
+            color: gameColor,
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: onAdd,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: GameColors.primaryColors['soundSpy']!,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+        ChunkyButton(
+          color: gameColor,
+          onTap: onAdd,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: const SizedBox(
+            width: double.infinity,
+            child: Text(
+              '+1',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
             ),
-            child: const Text('+1', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
       ],

@@ -1,16 +1,20 @@
 import 'dart:io';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 
+import '../../services/audio/game_sound_player.dart';
 import '../../services/auth/auth_controller.dart';
 import '../../services/friends/friends_controller.dart';
 import '../../services/link/link_controller.dart';
 import '../../services/windmill/windmill_types.dart';
+import '../../styles/app_theme.dart';
+import '../../styles/spacing.dart';
+import '../../widgets/app_background.dart';
+import '../../widgets/modern_panel.dart';
 import 'games_screen.dart';
 
 class GameSetupScreen extends StatefulWidget {
@@ -47,14 +51,27 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   final Map<String, List<String>> _playerSigns = {};
   int _signsTarget = 3;
   static const List<String> _auSigns = [
-    'GIVE WAY', 'STOP', 'NO ENTRY', 'SPEED LIMIT', 'KANGAROO CROSSING',
-    'KOALA CROSSING', 'WOMBAT CROSSING', 'SLOW DOWN', 'NO RIGHT TURN',
-    'ROAD WORK', 'TRAFFIC LIGHTS', 'SCHOOL ZONE', 'CHILDREN CROSSING',
-    'RAILWAY CROSSING', 'PETROL', 'FOOD', 'REST AREA'
+    'GIVE WAY',
+    'STOP',
+    'NO ENTRY',
+    'SPEED LIMIT',
+    'KANGAROO CROSSING',
+    'KOALA CROSSING',
+    'WOMBAT CROSSING',
+    'SLOW DOWN',
+    'NO RIGHT TURN',
+    'ROAD WORK',
+    'TRAFFIC LIGHTS',
+    'SCHOOL ZONE',
+    'CHILDREN CROSSING',
+    'RAILWAY CROSSING',
+    'PETROL',
+    'FOOD',
+    'REST AREA'
   ];
   static const int _maxPlayers = 8;
   bool _defaultsInitialized = false;
-  final AudioPlayer _soundPreviewPlayer = AudioPlayer();
+  final GameSoundPlayer _soundPreviewPlayer = GameSoundPlayer();
   final AudioRecorder _recorder = AudioRecorder();
 
   final List<String> _soundOptions = [
@@ -195,11 +212,9 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
       _showSnack('Custom sound file is missing. Please record again.');
       return;
     }
-    try {
-      await _soundPreviewPlayer.stop();
-      await _soundPreviewPlayer.play(DeviceFileSource(path));
-    } catch (e) {
-      _showSnack('Could not play custom sound: $e');
+    final played = await _soundPreviewPlayer.playFile(path);
+    if (!played) {
+      _showSnack('Could not play custom sound on this device.');
     }
   }
 
@@ -264,10 +279,12 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                     onPressed: toggleRecording,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isRecording ? Colors.red : Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 24),
                     ),
                     icon: Icon(isRecording ? Icons.stop : Icons.mic),
-                    label: Text(isRecording ? 'Stop recording' : 'Start recording'),
+                    label: Text(
+                        isRecording ? 'Stop recording' : 'Start recording'),
                   ),
                   const SizedBox(height: 8),
                   if (_hasCustomRecording(_playerSounds[player] ?? ''))
@@ -358,8 +375,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
       return false;
     }
     final lower = trimmed.toLowerCase();
-    final exists =
-        _players.any((player) => player.toLowerCase() == lower);
+    final exists = _players.any((player) => player.toLowerCase() == lower);
     if (exists) {
       _showPlayerExistsMessage(trimmed);
       return false;
@@ -447,7 +463,6 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     return null;
   }
 
-
   Future<void> _addPlayer() async {
     if (_usingSessionPlayers || _players.length >= _maxPlayers) {
       return;
@@ -485,6 +500,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
       ),
     );
 
+    controller.dispose();
     if (!mounted) return;
     if (newName != null && newName.trim().isNotEmpty) {
       _addPlayerByName(newName.trim());
@@ -506,10 +522,10 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     }
   }
 
-  void _renamePlayer(int index) {
+  Future<void> _renamePlayer(int index) async {
     if (_usingSessionPlayers) return;
     final controller = TextEditingController(text: _players[index]);
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Rename Player'),
@@ -562,6 +578,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
         ],
       ),
     );
+    controller.dispose();
   }
 
   Widget _buildNumberMatchSetup() {
@@ -659,11 +676,13 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   Widget _buildSoundSpySetup() {
     return Column(
       children: _players.map((player) {
-        _playerSounds[player] = _normalizeSoundSelection(_playerSounds[player]);
-        final selection = _playerSounds[player]!;
-        final dropdownValue = selection.startsWith('custom:') ? 'custom' : selection;
+        // Read-only normalization; the start-game flow normalizes again.
+        final selection = _normalizeSoundSelection(_playerSounds[player]);
+        final dropdownValue =
+            selection.startsWith('custom:') ? 'custom' : selection;
         final hasCustom = _hasCustomRecording(selection);
-        final customLabel = hasCustom ? 'Custom recording' : 'Custom recording (record new)';
+        final customLabel =
+            hasCustom ? 'Custom recording' : 'Custom recording (record new)';
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -680,7 +699,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Player sound',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
                       items: [
                         ..._soundOptions.map((sound) {
@@ -690,7 +710,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                             child: Text(sound),
                           );
                         }),
-                        DropdownMenuItem(value: 'custom', child: Text(customLabel)),
+                        DropdownMenuItem(
+                            value: 'custom', child: Text(customLabel)),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -733,7 +754,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                 decoration: const InputDecoration(
                   labelText: 'What do they spy?',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
                 initialValue: _spyObjects[player],
                 onChanged: (value) {
@@ -776,7 +798,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
       clonedTypes[entry.key] = {
         'enabled': entry.value['enabled'] == true,
         'points': (entry.value['points'] as num?)?.toDouble() ??
-            windmillTypeDefinitions[entry.key]?.defaultPoints ?? 1.0,
+            windmillTypeDefinitions[entry.key]?.defaultPoints ??
+            1.0,
       };
     }
     return {
@@ -803,7 +826,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
 
   Widget _buildWindmillSetup() {
     final mode = (_windmillConfig['mode'] as String?) ?? 'classic';
-    final mergeRadius = (_windmillConfig['mergeRadius'] as num?)?.toDouble() ?? 150.0;
+    final mergeRadius =
+        (_windmillConfig['mergeRadius'] as num?)?.toDouble() ?? 150.0;
     final types = (_windmillConfig['types'] as Map<String, dynamic>);
 
     return Column(
@@ -867,7 +891,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             final typeKey = entry.key;
             final data = types[typeKey] as Map<String, dynamic>;
             final enabled = data['enabled'] == true;
-            final points = (data['points'] as num?)?.toDouble() ?? entry.value.defaultPoints;
+            final points = (data['points'] as num?)?.toDouble() ??
+                entry.value.defaultPoints;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Column(
@@ -894,23 +919,28 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                           SizedBox(
                             width: 100,
                             child: TextFormField(
-                              initialValue: points.toStringAsFixed(points % 1 == 0 ? 0 : 1),
+                              initialValue: points
+                                  .toStringAsFixed(points % 1 == 0 ? 0 : 1),
                               decoration: const InputDecoration(
                                 labelText: 'Points',
                                 isDense: true,
                                 border: OutlineInputBorder(),
                               ),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
                               onChanged: (value) {
                                 final parsed = double.tryParse(value);
                                 setState(() {
-                                  data['points'] = parsed ?? entry.value.defaultPoints;
+                                  data['points'] =
+                                      parsed ?? entry.value.defaultPoints;
                                 });
                               },
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text('Default: ${entry.value.defaultPoints.toStringAsFixed(1)}'),
+                          Text(
+                              'Default: ${entry.value.defaultPoints.toStringAsFixed(1)}'),
                         ],
                       ),
                     ),
@@ -929,15 +959,20 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
       children: [
         Row(
           children: [
-            const Text('Signs per player', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Signs per player',
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(width: 12),
             DropdownButton<int>(
               value: _signsTarget,
-              items: [for (var n = 1; n <= 6; n++) DropdownMenuItem(value: n, child: Text('$n'))],
+              items: [
+                for (var n = 1; n <= 6; n++)
+                  DropdownMenuItem(value: n, child: Text('$n'))
+              ],
               onChanged: (v) => setState(() {
                 _signsTarget = v ?? 3;
                 // Trim selections to new target
-                _playerSigns.updateAll((key, list) => List<String>.from(list.take(_signsTarget)));
+                _playerSigns.updateAll(
+                    (key, list) => List<String>.from(list.take(_signsTarget)));
               }),
             ),
           ],
@@ -952,9 +987,11 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
               children: [
                 Row(
                   children: [
-                    Text(player, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(player,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(width: 8),
-                    Text('(${selected.length}/$_signsTarget)', style: const TextStyle(color: Colors.grey)),
+                    Text('(${selected.length}/$_signsTarget)',
+                        style: const TextStyle(color: Colors.grey)),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -972,7 +1009,10 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                               setState(() {
                                 final list = List<String>.from(selected);
                                 if (value) {
-                                  if (!list.contains(name) && list.length < _signsTarget) list.add(name);
+                                  if (!list.contains(name) &&
+                                      list.length < _signsTarget) {
+                                    list.add(name);
+                                  }
                                 } else {
                                   list.remove(name);
                                 }
@@ -1015,433 +1055,327 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     final suggestedNames = _availablePlayerSuggestions(auth, friends);
     final gameSpecificSetup = _buildGameSpecificSetup();
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(
-          'Game Setup',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('Game Setup'),
         leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-              Theme.of(context).colorScheme.secondary,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 12),
-
-                // Players Section
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: AppBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(Spacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ModernPanel(
+                margin: const EdgeInsets.only(bottom: Spacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.people_alt_rounded,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Players',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.canvas,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Text(
+                            '${_players.length}/$_maxPlayers',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (!_usingSessionPlayers && suggestedNames.isNotEmpty) ...[
+                      const Text(
+                        'Quick add from your friends list',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: suggestedNames
+                            .map(
+                              (name) => ActionChip(
+                                label: Text(name),
+                                onPressed: _players.length >= _maxPlayers
+                                    ? null
+                                    : () => _addPlayerByName(name),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_usingSessionPlayers) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.people_alt_rounded,
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                            Icon(
+                              Icons.info,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Players',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                            Expanded(
                               child: Text(
-                                '${_players.length}/$_maxPlayers',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black54,
-                                  fontSize: 12,
+                                'Linked session is managing the player list.',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        if (!_usingSessionPlayers &&
-                            suggestedNames.isNotEmpty) ...[
-                          const Text(
-                            'Quick add from your friends list',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: suggestedNames
-                                .map(
-                                  (name) => ActionChip(
-                                    label: Text(name),
-                                    onPressed: _players.length >= _maxPlayers
-                                        ? null
-                                        : () => _addPlayerByName(name),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        if (_usingSessionPlayers) ...[
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info,
-                                  size: 18,
-                                  color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _players.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final readOnly = _usingSessionPlayers;
+                        final canRemove = !readOnly && _players.length > 2;
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Linked session is managing the player list.',
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _players.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final readOnly = _usingSessionPlayers;
-                            final canRemove = !readOnly && _players.length > 2;
-                            return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _players[index],
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        iconSize: 20,
-                                        visualDensity: VisualDensity.compact,
-                                        icon: const Icon(Icons.edit_rounded),
-                                        onPressed: readOnly
-                                            ? null
-                                            : () => _renamePlayer(index),
-                                        tooltip: readOnly
-                                            ? 'Players are managed by the session host'
-                                            : 'Rename player',
-                                        color: readOnly
-                                            ? Colors.grey
-                                            : Colors.blue,
-                                      ),
-                                      IconButton(
-                                        iconSize: 20,
-                                        visualDensity: VisualDensity.compact,
-                                        icon: const Icon(
-                                            Icons.remove_circle_rounded),
-                                        onPressed: canRemove
-                                            ? () => _removePlayer(index)
-                                            : null,
-                                        tooltip: readOnly
-                                            ? 'Players are managed by the session host'
-                                            : (canRemove
-                                                ? 'Remove player'
-                                                : 'Minimum 2 players required'),
-                                        color: canRemove
-                                            ? Colors.red
-                                            : Colors.grey,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        if (_usingSessionPlayers)
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.lock, color: Colors.grey, size: 14),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Linked session controls players',
+                                child: Text(
+                                  '${index + 1}',
                                   style: TextStyle(
-                                      color: Colors.grey, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (_players.length < _maxPlayers)
-                          InkWell(
-                            onTap: _addPlayer,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.add_circle_outline,
-                                    size: 16,
+                                    fontWeight: FontWeight.bold,
                                     color:
                                         Theme.of(context).colorScheme.primary,
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Add Player',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _players[index],
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    iconSize: 20,
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(Icons.edit_rounded),
+                                    onPressed: readOnly
+                                        ? null
+                                        : () => _renamePlayer(index),
+                                    tooltip: readOnly
+                                        ? 'Players are managed by the session host'
+                                        : 'Rename player',
+                                    color: readOnly ? Colors.grey : Colors.blue,
+                                  ),
+                                  IconButton(
+                                    iconSize: 20,
+                                    visualDensity: VisualDensity.compact,
+                                    icon:
+                                        const Icon(Icons.remove_circle_rounded),
+                                    onPressed: canRemove
+                                        ? () => _removePlayer(index)
+                                        : null,
+                                    tooltip: readOnly
+                                        ? 'Players are managed by the session host'
+                                        : (canRemove
+                                            ? 'Remove player'
+                                            : 'Minimum 2 players required'),
+                                    color: canRemove ? Colors.red : Colors.grey,
                                   ),
                                 ],
                               ),
-                            ),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.info_outline,
-                                    color: Colors.grey, size: 14),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Maximum players reached',
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                if (gameSpecificSetup != null) ...[
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Game Settings',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          gameSpecificSetup,
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                // Start Game Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Container(
-                    height: 48,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    GamesScreen(
-                              gameType: widget.gameId,
-                              players: _players,
-                              playerNumbers: _playerNumbers,
-                              playerSounds: _buildSoundSelectionsForGame(),
-                              spyObjects: _spyObjects,
-                              playerColors: _playerColors,
-                              playerSigns: _playerSigns,
-                              windmillConfig: _cloneWindmillConfig(),
-                            ),
-                            transitionsBuilder: (context, animation,
-                                secondaryAnimation, child) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            },
-                            transitionDuration:
-                                const Duration(milliseconds: 500),
+                            ],
                           ),
                         );
                       },
-                      style: ButtonStyle(
-                        backgroundColor:
-                            WidgetStateProperty.all(const Color(0xFF4CAF50)),
-                        foregroundColor: WidgetStateProperty.all(Colors.white),
-                        padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(vertical: 12)),
-                        shape: WidgetStateProperty.all(RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.play_circle_filled, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Start Game',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
                     ),
+                    const SizedBox(height: 12),
+                    if (_usingSessionPlayers)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.lock, color: Colors.grey, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'Linked session controls players',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (_players.length < _maxPlayers)
+                      InkWell(
+                        onTap: _addPlayer,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_circle_outline,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Add Player',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.info_outline,
+                                color: Colors.grey, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'Maximum players reached',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (gameSpecificSetup != null) ...[
+                ModernPanel(
+                  margin: const EdgeInsets.only(bottom: Spacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Game settings',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: Spacing.md),
+                      gameSpecificSetup,
+                    ],
                   ),
                 ),
               ],
-            ),
+              GradientPrimaryButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          GamesScreen(
+                        gameType: widget.gameId,
+                        players: _players,
+                        playerNumbers: _playerNumbers,
+                        playerSounds: _buildSoundSelectionsForGame(),
+                        spyObjects: _spyObjects,
+                        playerColors: _playerColors,
+                        playerSigns: _playerSigns,
+                        windmillConfig: _cloneWindmillConfig(),
+                      ),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      transitionDuration: const Duration(milliseconds: 500),
+                    ),
+                  );
+                },
+                label: 'Start game',
+                icon: Icons.play_arrow_rounded,
+              ),
+              const SizedBox(height: Spacing.lg),
+            ],
           ),
         ),
       ),

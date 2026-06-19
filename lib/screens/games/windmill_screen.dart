@@ -13,6 +13,8 @@ import '../../services/location/location_service.dart';
 import '../../services/windmill/windmill_types.dart';
 import '../../styles/game_colors.dart';
 import '../../styles/spacing.dart';
+import '../../widgets/game_fx.dart';
+import '../../widgets/game_shell.dart';
 import '../../widgets/mini_map.dart';
 
 class WindmillScreen extends StatefulWidget {
@@ -74,10 +76,11 @@ class _WindmillScreenState extends State<WindmillScreen>
   }
 
   void _initFirebaseSync() {
-    if (widget.sessionId == null) return;
+    if (widget.sessionId == null || !GameSessionService.isAvailable) return;
 
     // Listen to session changes for real-time score sync
-    _sessionSub = _sessionService.watchSession(widget.sessionId!).listen((session) {
+    _sessionSub =
+        _sessionService.watchSession(widget.sessionId!).listen((session) {
       if (session == null) return;
 
       // Update scores from Firebase
@@ -115,8 +118,10 @@ class _WindmillScreenState extends State<WindmillScreen>
 
   void _configureFromConfig() {
     final mode = widget.config['mode'] as String? ?? 'classic';
-    final rawTypes = (widget.config['types'] as Map?)?.cast<String, dynamic>() ?? {};
-    final mergeRadius = (widget.config['mergeRadius'] as num?)?.toDouble() ?? 150.0;
+    final rawTypes =
+        (widget.config['types'] as Map?)?.cast<String, dynamic>() ?? {};
+    final mergeRadius =
+        (widget.config['mergeRadius'] as num?)?.toDouble() ?? 150.0;
 
     if (mode == 'custom' && rawTypes.isNotEmpty) {
       final enabled = <String>[];
@@ -126,7 +131,8 @@ class _WindmillScreenState extends State<WindmillScreen>
         final enabledFlag = raw?['enabled'] == true;
         if (enabledFlag) {
           enabled.add(entry.key);
-          points[entry.key] = (raw?['points'] as num?)?.toDouble() ?? entry.value.defaultPoints;
+          points[entry.key] =
+              (raw?['points'] as num?)?.toDouble() ?? entry.value.defaultPoints;
         }
       }
       if (enabled.isEmpty) {
@@ -149,13 +155,14 @@ class _WindmillScreenState extends State<WindmillScreen>
       setState(() => _current = ll.LatLng(pos.latitude, pos.longitude));
     } catch (_) {}
     _posSub = Geolocator.getPositionStream().listen((position) {
+      if (!mounted) return;
       setState(() {
         _current = ll.LatLng(position.latitude, position.longitude);
       });
     });
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('windmill_pins');
-    if (raw != null) {
+    if (raw != null && mounted) {
       final decoded = jsonDecode(raw) as List<dynamic>;
       setState(() {
         for (final item in decoded) {
@@ -208,13 +215,18 @@ class _WindmillScreenState extends State<WindmillScreen>
               children: [
                 const ListTile(
                   title: Text('Windmills already logged nearby'),
-                  subtitle: Text('Select one to update or add a brand new pin.'),
+                  subtitle:
+                      Text('Select one to update or add a brand new pin.'),
                 ),
                 for (final match in matches)
                   ListTile(
-                leading: Icon(windmillTypeDefinitions[match.pin.type]?.icon ?? Icons.wind_power),
-                title: Text('${windmillTypeDefinitions[match.pin.type]?.label ?? match.pin.type} (${match.pin.count})'),
-                    subtitle: Text('${_formatDistanceMeters(match.distanceMeters)} away'),
+                    leading: Icon(
+                        windmillTypeDefinitions[match.pin.type]?.icon ??
+                            Icons.wind_power),
+                    title: Text(
+                        '${windmillTypeDefinitions[match.pin.type]?.label ?? match.pin.type} (${match.pin.count})'),
+                    subtitle: Text(
+                        '${_formatDistanceMeters(match.distanceMeters)} away'),
                     onTap: () => Navigator.pop(context, match.pin.id),
                   ),
                 const Divider(),
@@ -268,8 +280,22 @@ class _WindmillScreenState extends State<WindmillScreen>
       );
     });
     _playSpin();
+    if (mounted) {
+      final points = _typePoints[type] ?? 1;
+      GameFx.scoreFloat(
+        context,
+        text: '+${_formatPoints(points)} $player',
+        color: GameColors.primaryColors['windmill']!,
+      );
+    }
     await _persistPins();
     await _syncScoreToFirebase(player);
+  }
+
+  String _formatPoints(num points) {
+    return points % 1 == 0
+        ? points.toInt().toString()
+        : points.toStringAsFixed(1);
   }
 
   Future<void> _updateExistingPinFlow(_WindmillPin pin, String player) async {
@@ -282,22 +308,27 @@ class _WindmillScreenState extends State<WindmillScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(windmillTypeDefinitions[pin.type]?.icon ?? Icons.wind_power),
-                title: Text(windmillTypeDefinitions[pin.type]?.label ?? pin.type),
+                leading: Icon(windmillTypeDefinitions[pin.type]?.icon ??
+                    Icons.wind_power),
+                title:
+                    Text(windmillTypeDefinitions[pin.type]?.label ?? pin.type),
                 subtitle: Text('Currently logged: ${pin.count}'),
               ),
               ListTile(
                 leading: const Icon(Icons.add),
                 title: const Text('Add another windmill here'),
                 subtitle: const Text('Increase the total and award points.'),
-                onTap: () => Navigator.pop(context, const _PinUpdateResult(deltaCount: 1, awardPoints: true)),
+                onTap: () => Navigator.pop(context,
+                    const _PinUpdateResult(deltaCount: 1, awardPoints: true)),
               ),
               ListTile(
                 leading: const Icon(Icons.rule_folder_outlined),
                 title: const Text('Update total manually'),
-                subtitle: const Text('Set the total number spotted at this site.'),
+                subtitle:
+                    const Text('Set the total number spotted at this site.'),
                 onTap: () async {
-                  final controller = TextEditingController(text: pin.count.toString());
+                  final controller =
+                      TextEditingController(text: pin.count.toString());
                   final newTotal = await showDialog<int>(
                     context: context,
                     builder: (context) {
@@ -306,16 +337,21 @@ class _WindmillScreenState extends State<WindmillScreen>
                         content: TextField(
                           controller: controller,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Total windmills here'),
+                          decoration: const InputDecoration(
+                              labelText: 'Total windmills here'),
                         ),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                          TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel')),
                           ElevatedButton(
                             onPressed: () {
                               final parsed = int.tryParse(controller.text);
                               if (parsed == null || parsed < pin.count) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Enter a number equal to or greater than the current total.')),
+                                  const SnackBar(
+                                      content: Text(
+                                          'Enter a number equal to or greater than the current total.')),
                                 );
                                 return;
                               }
@@ -326,13 +362,15 @@ class _WindmillScreenState extends State<WindmillScreen>
                         ],
                       );
                     },
-                    );
+                  );
+                  controller.dispose();
                   if (newTotal != null) {
                     if (!context.mounted) return;
                     final delta = newTotal - pin.count;
                     Navigator.pop(
                       context,
-                      _PinUpdateResult(deltaCount: delta, awardPoints: delta > 0),
+                      _PinUpdateResult(
+                          deltaCount: delta, awardPoints: delta > 0),
                     );
                   }
                 },
@@ -340,7 +378,8 @@ class _WindmillScreenState extends State<WindmillScreen>
               ListTile(
                 leading: const Icon(Icons.visibility_outlined),
                 title: const Text('Already counted – no change'),
-                onTap: () => Navigator.pop(context, const _PinUpdateResult(deltaCount: 0, awardPoints: false)),
+                onTap: () => Navigator.pop(context,
+                    const _PinUpdateResult(deltaCount: 0, awardPoints: false)),
               ),
               const SizedBox(height: 8),
             ],
@@ -370,6 +409,14 @@ class _WindmillScreenState extends State<WindmillScreen>
         );
       });
       _playSpin();
+      if (mounted) {
+        final points = (_typePoints[pin.type] ?? 1.0) * result.deltaCount;
+        GameFx.scoreFloat(
+          context,
+          text: '+${_formatPoints(points)} $player',
+          color: GameColors.primaryColors['windmill']!,
+        );
+      }
       await _persistPins();
       await _syncScoreToFirebase(player);
     } else if (result.deltaCount == 0 && result.awardPoints == false) {
@@ -417,7 +464,8 @@ class _WindmillScreenState extends State<WindmillScreen>
                         setModalState(() => selection = value!);
                       },
                       title: Text(def.label),
-                      subtitle: Text('${def.defaultPoints.toStringAsFixed(1)} base points'),
+                      subtitle: Text(
+                          '${def.defaultPoints.toStringAsFixed(1)} base points'),
                       secondary: Icon(def.icon),
                     );
                   }),
@@ -440,7 +488,8 @@ class _WindmillScreenState extends State<WindmillScreen>
     final distance = ll.Distance();
     return _pins
         .map((pin) {
-          final distMeters = distance.as(ll.LengthUnit.Meter, point, pin.latLng);
+          final distMeters =
+              distance.as(ll.LengthUnit.Meter, point, pin.latLng);
           return _MatchedPin(pin: pin, distanceMeters: distMeters);
         })
         .where((match) => match.distanceMeters <= _mergeRadiusMetres)
@@ -450,28 +499,30 @@ class _WindmillScreenState extends State<WindmillScreen>
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _undoLastFor(String player) {
     final index = _history.indexWhere((event) => event.player == player);
     if (index == -1) return;
-    final event = _history.removeAt(index);
     setState(() {
+      final event = _history.removeAt(index);
       _scores[player] = (_scores[player] ?? 0) - event.points;
       if (_scores[player]! < 0) _scores[player] = 0;
-    });
-    if (event.pinId != null && event.deltaCount > 0) {
-      final index = _pins.indexWhere((p) => p.id == event.pinId);
-      if (index != -1) {
-        final pin = _pins[index];
-        pin.count -= event.deltaCount;
-        if (pin.count <= 0) {
-          _pins.removeAt(index);
+      if (event.pinId != null && event.deltaCount > 0) {
+        final pinIndex = _pins.indexWhere((p) => p.id == event.pinId);
+        if (pinIndex != -1) {
+          final pin = _pins[pinIndex];
+          pin.count -= event.deltaCount;
+          if (pin.count <= 0) {
+            _pins.removeAt(pinIndex);
+          }
         }
-        _persistPins();
       }
-    }
+    });
+    _persistPins();
+    _syncScoreToFirebase(player);
   }
 
   @override
@@ -495,7 +546,8 @@ class _WindmillScreenState extends State<WindmillScreen>
                 windmillTypeDefinitions[pin.type]?.icon ?? Icons.wind_power,
                 color: GameColors.primaryColors['windmill']!,
               ),
-              Text('${pin.count}', style: const TextStyle(fontSize: 12, color: Colors.black)),
+              Text('${pin.count}',
+                  style: const TextStyle(fontSize: 12, color: Colors.black)),
             ],
           ),
         ),
@@ -512,85 +564,136 @@ class _WindmillScreenState extends State<WindmillScreen>
       );
     }
 
-    final mapCenter = _current ?? (_pins.isNotEmpty ? _pins.last.latLng : _defaultCenter);
+    final mapCenter =
+        _current ?? (_pins.isNotEmpty ? _pins.last.latLng : _defaultCenter);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Windmill Count'),
-        actions: [
-          IconButton(
-            icon: Icon(_showMap ? Icons.map : Icons.map_outlined),
-            tooltip: 'Toggle map',
-            onPressed: () => setState(() => _showMap = !_showMap),
-          ),
-          IconButton(
-            icon: Icon(_showRules ? Icons.visibility_off : Icons.info_outline),
-            tooltip: 'Show rules',
-            onPressed: () => setState(() => _showRules = !_showRules),
-          ),
-        ],
-      ),
+    final gameColor = GameColors.primaryColors['windmill']!;
+
+    return GameShell(
+      title: 'Windmill Count',
+      subtitle: 'Spot windmills, stack up points!',
+      color: gameColor,
+      icon: Icons.wind_power_rounded,
+      onHelp: () => setState(() => _showRules = !_showRules),
+      actions: [
+        GameHeaderButton(
+          icon: _showMap ? Icons.map_rounded : Icons.map_outlined,
+          onTap: () => setState(() => _showMap = !_showMap),
+        ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(Spacing.lg),
         children: [
-          if (_showRules) _buildRulesCard(),
+          GameRulesCard(
+            visible: _showRules,
+            color: gameColor,
+            rules: const [
+              'Tap “Spotted!” when you see a windmill.',
+              'Pick the type (farm windmill, turbine, pinwheel, etc.).',
+              'The game keeps score using the points selected in setup.',
+              'Windmills within the merge radius are grouped so the family can agree whether it is a new discovery or already counted.',
+            ],
+          ),
           if (_showMap)
-            MiniMap(
-              center: mapCenter,
-              markers: markers,
-              height: 220,
-              zoom: _pins.isEmpty ? 12 : 14,
-            ),
-          if (_showMap) const SizedBox(height: Spacing.md),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Total windmills logged: $totalWindmills'),
-                  const SizedBox(height: Spacing.xs),
-                  Text(currentScoreSummary.isEmpty ? 'No scores yet.' : currentScoreSummary),
-                ],
+            GamePanel(
+              accent: gameColor,
+              padding: const EdgeInsets.all(Spacing.xs),
+              margin: const EdgeInsets.only(bottom: Spacing.md),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: MiniMap(
+                  center: mapCenter,
+                  markers: markers,
+                  height: 220,
+                  zoom: _pins.isEmpty ? 12 : 14,
+                ),
               ),
+            ),
+          GamePanel(
+            accent: gameColor,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: gameColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: AnimatedBuilder(
+                    animation: _spinAnimation,
+                    builder: (context, child) => Transform.rotate(
+                      angle: _spinAnimation.value,
+                      child: child,
+                    ),
+                    child: Icon(Icons.wind_power, color: gameColor, size: 26),
+                  ),
+                ),
+                const SizedBox(width: Spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total windmills logged: $totalWindmills',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: Spacing.xs),
+                      Text(
+                        currentScoreSummary.isEmpty
+                            ? 'No scores yet.'
+                            : currentScoreSummary,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: Spacing.md),
           _buildPlayerGrid(),
           const SizedBox(height: Spacing.lg),
-          const Text('Windmills spotted', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          GameSectionTitle(
+            icon: Icons.location_on_rounded,
+            title: 'Windmills spotted',
+            color: gameColor,
+          ),
+          const SizedBox(height: Spacing.sm),
           if (_pins.isEmpty)
-            const Text('No windmills logged yet.')
+            GamePanel(
+              accent: gameColor,
+              child: Center(
+                child: Text(
+                  'No windmills logged yet.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            )
           else
             ..._pins.map(_buildPinTile),
           const SizedBox(height: Spacing.lg),
-          const Text('Spotting history', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          GameSectionTitle(
+            icon: Icons.history_rounded,
+            title: 'Spotting history',
+            color: gameColor,
+          ),
+          const SizedBox(height: Spacing.sm),
           if (_history.isEmpty)
-            const Text('No windmills spotted yet.')
+            GamePanel(
+              accent: gameColor,
+              child: Center(
+                child: Text(
+                  'No windmills spotted yet.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            )
           else
             ..._history.map(_buildHistoryTile),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRulesCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('How to play', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('• Tap “Spotted!” when you see a windmill.\n'
-                '• Pick the type (farm windmill, turbine, pinwheel, etc.).\n'
-                '• The game keeps score using the points selected in setup.\n'
-                '• Windmills within the merge radius are grouped so the family can agree whether it is a new discovery or already counted.'),
-          ],
-        ),
       ),
     );
   }
@@ -601,7 +704,7 @@ class _WindmillScreenState extends State<WindmillScreen>
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.68,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -614,104 +717,217 @@ class _WindmillScreenState extends State<WindmillScreen>
   }
 
   Widget _buildPlayerCard(String player) {
+    final gameColor = GameColors.primaryColors['windmill']!;
     final score = _scores[player] ?? 0;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+
+    return GamePanel(
+      accent: gameColor,
+      padding: const EdgeInsets.all(Spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      gameColor,
+                      Color.lerp(gameColor, Colors.black, 0.2)!,
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: AnimatedBuilder(
+                  animation: _spinAnimation,
+                  builder: (context, child) => Transform.rotate(
+                    angle: _spinAnimation.value,
+                    child: child,
+                  ),
+                  child: const Icon(Icons.wind_power,
+                      color: Colors.white, size: 22),
+                ),
+              ),
+              const SizedBox(width: Spacing.sm),
+              Expanded(
+                child: Text(
+                  player,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: gameColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${_formatScore(score)} pts',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    color: gameColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          ChunkyButton(
+            color: gameColor,
+            onTap: () => _handleSpot(player),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: GameColors.primaryColors['windmill']!.withValues(alpha: 0.1),
-                  child: AnimatedBuilder(
-                    animation: _spinAnimation,
-                    builder: (context, child) => Transform.rotate(
-                      angle: _spinAnimation.value,
-                      child: child,
-                    ),
-                    child: Icon(Icons.wind_power, color: GameColors.primaryColors['windmill']!),
+                Icon(Icons.add_location_alt_outlined,
+                    size: 20, color: Colors.white),
+                SizedBox(width: 6),
+                Text(
+                  'Spotted!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(width: Spacing.sm),
-                Expanded(
-                  child: Text(
-                    player,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text('${_formatScore(score)} pts'),
               ],
             ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _handleSpot(player),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: GameColors.primaryColors['windmill']!,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                icon: const Icon(Icons.add_location_alt_outlined, size: 20),
-                label: const Text('Spotted!'),
+          ),
+          const SizedBox(height: Spacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _undoLastFor(player),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                foregroundColor: gameColor,
+                side: BorderSide(color: gameColor.withValues(alpha: 0.5)),
               ),
+              icon: const Icon(Icons.undo, size: 18),
+              label: const Text('Undo'),
             ),
-            const SizedBox(height: Spacing.xs),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => _undoLastFor(player)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: BorderSide(color: GameColors.primaryColors['windmill']!),
-                ),
-                icon: const Icon(Icons.undo, size: 18),
-                label: const Text('Undo'),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPinTile(_WindmillPin pin) {
+    final gameColor = GameColors.primaryColors['windmill']!;
     final typeDef = windmillTypeDefinitions[pin.type];
-    return Card(
-      child: ListTile(
-        leading: Icon(typeDef?.icon ?? Icons.wind_power),
-        title: Text(typeDef?.label ?? pin.type),
-        subtitle: Text('Count: ${pin.count} • Last updated: ${_formatDate(pin.lastUpdated)}'),
+
+    return GamePanel(
+      accent: gameColor,
+      margin: const EdgeInsets.only(bottom: Spacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.sm2,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: gameColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(typeDef?.icon ?? Icons.wind_power, color: gameColor),
+          ),
+          const SizedBox(width: Spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  typeDef?.label ?? pin.type,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  'Count: ${pin.count} • Last updated: ${_formatDate(pin.lastUpdated)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHistoryTile(_WindmillEvent event) {
+    final gameColor = GameColors.primaryColors['windmill']!;
     final typeDef = windmillTypeDefinitions[event.type];
     final description = event.deltaCount > 0
         ? 'New windmill logged (+${event.deltaCount})'
         : 'Revisited windmill';
-    return Card(
-      child: ListTile(
-        leading: Icon(typeDef?.icon ?? Icons.wind_power),
-        title: Text('${event.player} • ${typeDef?.label ?? event.type}'),
-        subtitle: Text('$description • ${_formatDate(event.timestamp)}'),
-        trailing: Text(event.points > 0 ? '+${_formatScore(event.points)}' : ''),
+
+    return GamePanel(
+      accent: gameColor,
+      margin: const EdgeInsets.only(bottom: Spacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.sm2,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: gameColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(typeDef?.icon ?? Icons.wind_power, color: gameColor),
+          ),
+          const SizedBox(width: Spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${event.player} • ${typeDef?.label ?? event.type}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  '$description • ${_formatDate(event.timestamp)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          if (event.points > 0)
+            Text(
+              '+${_formatScore(event.points)}',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: gameColor,
+              ),
+            ),
+        ],
       ),
     );
   }
 
   String _formatDate(DateTime timestamp) {
-    final date = '${timestamp.day.toString().padLeft(2, '0')}/${timestamp.month.toString().padLeft(2, '0')}';
-    final time = '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    final date =
+        '${timestamp.day.toString().padLeft(2, '0')}/${timestamp.month.toString().padLeft(2, '0')}';
+    final time =
+        '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
     return '$date $time';
   }
 
@@ -765,10 +981,10 @@ class _WindmillPin {
       lon: (map['lon'] as num).toDouble(),
       type: map['type'] as String? ?? 'pump',
       count: (map['count'] as num?)?.toInt() ?? 1,
-      lastUpdated: DateTime.tryParse(map['lastUpdated'] as String? ?? '') ?? DateTime.now(),
+      lastUpdated: DateTime.tryParse(map['lastUpdated'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
-
 }
 
 class _WindmillEvent {

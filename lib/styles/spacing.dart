@@ -55,4 +55,3 @@ class Spacing {
   /// Extra extra large spacing (32px) - Page-level spacing, major sections
   static const double xxl = 32;
 }
-
